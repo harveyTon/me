@@ -1,5 +1,7 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
+use std::fs;
+use tempfile::tempdir;
 
 #[test]
 fn plain_outputs_user_at_host() {
@@ -97,4 +99,34 @@ fn fast_flag_produces_output() {
         .assert()
         .success()
         .stdout(predicate::str::is_empty().not());
+}
+
+#[test]
+fn fast_git_context_uses_short_oid_for_detached_head() {
+    let repo = tempdir().unwrap();
+    let home = tempdir().unwrap();
+    let git = repo.path().join(".git");
+    let tag = git.join("refs/tags");
+    fs::create_dir_all(&tag).unwrap();
+    fs::write(repo.path().join("package.json"), "{}").unwrap();
+    fs::write(
+        git.join("HEAD"),
+        "1234567890abcdef1234567890abcdef12345678\n",
+    )
+    .unwrap();
+    fs::write(
+        tag.join("n8n@2.2.4"),
+        "1234567890abcdef1234567890abcdef12345678\n",
+    )
+    .unwrap();
+
+    Command::cargo_bin("me")
+        .unwrap()
+        .args(["--fast", "--no-color"])
+        .current_dir(repo.path())
+        .env("HOME", home.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("git(1234567890ab)"))
+        .stdout(predicate::str::contains("git(n8n@2.2.4)").not());
 }

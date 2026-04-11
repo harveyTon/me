@@ -25,6 +25,6 @@ pub fn detect_fast(config: &ContextConfig) -> ContextInfo {
         ssh: config.ssh.then(ssh::detect).flatten(),
         container: config.container.then(container::detect).flatten(),
         project: config.project.then(project::detect_fast).flatten(),
-        git: config.git.then(git::detect).flatten(),
+        git: config.git.then(git::detect_fast).flatten(),
     }
 }
