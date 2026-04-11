@@ -127,6 +127,7 @@ pub struct ContainerContext {
 #[derive(Debug, Clone, Serialize)]
 pub struct ProjectContext {
     pub kind: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
 }
 

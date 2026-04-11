@@ -47,10 +47,10 @@ mkdir -p Formula
 cp ../me/Formula/me.rb Formula/me.rb
 ```
 
-4. Generate the release tarball SHA after `v0.2.0` is pushed:
+4. Generate the release tarball SHA after `v0.2.1` is pushed:
 
 ```bash
-curl -L https://github.com/harveyTon/me/archive/refs/tags/v0.2.0.tar.gz | shasum -a 256
+curl -L https://github.com/harveyTon/me/archive/refs/tags/v0.2.1.tar.gz | shasum -a 256
 ```
 
 5. Update the URL and SHA in `Formula/me.rb`.

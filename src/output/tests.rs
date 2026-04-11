@@ -241,6 +241,29 @@ fn json_omits_null_context_members() {
 }
 
 #[test]
+fn json_project_includes_version_when_present() {
+    let rendered = render_json(&sample_info(), &[Field::Context]).unwrap();
+    assert!(rendered.contains("\"project\""));
+    assert!(rendered.contains("\"version\": \"1.0\""));
+    assert!(rendered.contains("\"git\""));
+}
+
+#[test]
+fn json_project_omits_version_when_absent() {
+    let mut info = sample_info();
+    info.context.project = Some(ProjectContext {
+        kind: "rust".into(),
+        version: None,
+    });
+    let rendered = render_json(&info, &[Field::Context]).unwrap();
+    assert!(rendered.contains("\"project\""));
+    assert!(rendered.contains("\"kind\": \"rust\""));
+    assert!(rendered.contains("\"git\""));
+    assert!(!rendered.contains("\"version\""));
+    assert!(!rendered.contains("null"));
+}
+
+#[test]
 fn compact_limits_context_tags() {
     let mut info = sample_info();
     info.ssh = true;

@@ -1,14 +1,15 @@
 # Release Notes
 
-## v0.2.0
+## v0.2.1
 
-Prompt, context, and distribution update for `me`, a modern, context-aware replacement for `whoami`.
+JSON cleanup update for `me`, a modern, context-aware replacement for `whoami`.
 
 ### Highlights
 
 - Human-readable default block output.
 - Compact output for prompts and quick checks.
 - JSON output for scripts.
+- Fast-mode JSON now omits absent project versions instead of emitting `"version": null`.
 - Config-style output for simple shell parsing.
 - Field selectors for common identity, runtime, state, and network fields.
 - Local context detection for SSH sessions, containers, Rust projects, Node projects, and lightweight Git branch context.
@@ -69,9 +70,9 @@ Supported platforms:
 
 Expected binary artifact names:
 
-- `me-v0.2.0-macos-arm64.tar.gz`
-- `me-v0.2.0-macos-x64.tar.gz`
-- `me-v0.2.0-linux-x64.tar.gz`
-- `me-v0.2.0-linux-arm64.tar.gz`
-- `me-v0.2.0-windows-x64.zip`
-- `me-v0.2.0-windows-arm64.zip`
+- `me-v0.2.1-macos-arm64.tar.gz`
+- `me-v0.2.1-macos-x64.tar.gz`
+- `me-v0.2.1-linux-x64.tar.gz`
+- `me-v0.2.1-linux-arm64.tar.gz`
+- `me-v0.2.1-windows-x64.zip`
+- `me-v0.2.1-windows-arm64.zip`
