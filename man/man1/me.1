@@ -1,0 +1,116 @@
+.TH ME 1 "2026-04-11" "me 0.1.0" "User Commands"
+.SH NAME
+me \- a modern, context-aware replacement for whoami
+.SH SYNOPSIS
+.B me
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B me
+prints local identity and session context in a compact, human-readable form.
+It keeps the spirit of
+.BR whoami (1)
+while showing useful local details such as user and group IDs, shell, process IDs,
+sudo state, SSH session state, local network summary, and project/container context.
+.PP
+The default output is intended for humans. Use JSON mode for scripts.
+.SH OPTIONS
+.TP
+.B \-\-help
+Print help.
+.TP
+.B \-\-compact
+Use compact one-line output.
+.TP
+.B \-\-json
+Emit structured JSON.
+.TP
+.B \-\-format \fIFORMAT\fR
+Select labeled or config-style output. Supported values are
+.B labeled
+and
+.BR config .
+.TP
+.B \-\-plain
+Print plain identity, defaulting to user@host.
+.TP
+.B \-\-no-color
+Disable ANSI color.
+.TP
+.B \-\-full
+Show full multi-line values where the default is condensed.
+.TP
+.B \-\-watch
+Refresh output in place.
+.TP
+.B \-\-interval \fISECONDS\fR
+Set the watch refresh interval in seconds.
+.TP
+.B \-\-copy [\fIFIELD\fR]
+Copy a field to the clipboard, or prompt when omitted.
+.TP
+.B \-\-field \fIFIELDS\fR
+Select fields by name. Multiple fields may be comma-separated.
+.TP
+.B \-u
+Select user.
+.TP
+.B \-h
+Select host.
+.TP
+.B \-s
+Select shell.
+.TP
+.B \-p
+Select pid.
+.TP
+.B \-P
+Select ppid.
+.TP
+.B \-t
+Select tty.
+.TP
+.B \-g
+Select groups.
+.TP
+.B \-i
+Select uid and gid.
+.TP
+.B \-n
+Select network.
+.TP
+.B \-V, \-\-version
+Print version.
+.SH EXAMPLES
+.TP
+.B me
+Show the default block output.
+.TP
+.B me \-\-compact
+Show compact one-line output.
+.TP
+.B me \-\-json
+Emit JSON output.
+.TP
+.B me \-u \-h \-n
+Show only user, host, and network fields.
+.TP
+.B me \-\-watch \-\-interval 2
+Refresh output every two seconds.
+.SH CONTEXT
+.B me
+detects a small set of local context signals: SSH sessions, Docker/container
+environments, Rust projects via Cargo.toml, and Node projects via package.json.
+.PP
+Context is summarized quietly in the default block output.
+.SH NOTES
+Because
+.B \-h
+selects host, help is available as
+.BR \-\-help .
+.SH AUTHORS
+See the project repository:
+.UR https://github.com/harveyTon/me
+https://github.com/harveyTon/me
+.UE
+.SH LICENSE
+MIT

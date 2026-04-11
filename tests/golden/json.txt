@@ -1,0 +1,6 @@
+{
+  "host": "MacBook",
+  "ssh": false,
+  "sudo": false,
+  "user": "tiger"
+}
