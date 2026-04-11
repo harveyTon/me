@@ -30,6 +30,9 @@ pub fn render_compact(info: &MeInfo, fields: &[Field]) -> String {
         if let Some(project) = compact_project(info) {
             parts.push(project);
         }
+        if let Some(cwd) = compact_cwd(info) {
+            parts.push(cwd);
+        }
     }
 
     format!("{}\n", parts.join(" · "))
@@ -63,4 +66,12 @@ fn compact_project(info: &MeInfo) -> Option<String> {
         parts.push(format!("git:{}", git.branch));
     }
     Some(parts.join(" ")).filter(|s| !s.is_empty())
+}
+
+fn compact_cwd(info: &MeInfo) -> Option<String> {
+    let raw = info.pwd.as_ref()?.raw.as_str();
+    std::path::Path::new(raw)
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .filter(|name| !name.is_empty())
 }

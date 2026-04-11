@@ -7,6 +7,7 @@ use std::{env, fs, path::PathBuf};
 pub struct Config {
     pub view: View,
     pub theme: String,
+    pub color: ColorMode,
     pub icons: IconMode,
     pub fields: Vec<Field>,
     pub context: ContextConfig,
@@ -24,6 +25,14 @@ pub enum View {
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum IconMode {
+    Auto,
+    On,
+    Off,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ColorMode {
     Auto,
     On,
     Off,
@@ -57,6 +66,7 @@ impl Default for Config {
         Self {
             view: View::Block,
             theme: "dark".into(),
+            color: ColorMode::Auto,
             icons: IconMode::Auto,
             fields: Vec::new(),
             context: ContextConfig::default(),
@@ -101,6 +111,14 @@ impl Config {
                 "off" => IconMode::Off,
                 "auto" => IconMode::Auto,
                 _ => config.icons,
+            };
+        }
+        if let Ok(color) = env::var("ME_COLOR") {
+            config.color = match color.as_str() {
+                "on" => ColorMode::On,
+                "off" => ColorMode::Off,
+                "auto" => ColorMode::Auto,
+                _ => config.color,
             };
         }
         if let Ok(mode) = env::var("ME_PLAIN_MODE") {
@@ -180,6 +198,7 @@ fn default_config_yaml() -> &'static str {
     "\
 view: block
 theme: dark
+color: auto
 icons: auto
 fields: []
 context:
@@ -211,6 +230,7 @@ mod tests {
         let written = fs::read_to_string(path).unwrap();
         assert!(written.contains("view: block"));
         assert!(written.contains("theme: dark"));
+        assert!(written.contains("color: auto"));
         assert_eq!(config.theme, "dark");
         assert_eq!(config.view, View::Block);
     }
@@ -222,7 +242,7 @@ mod tests {
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(
             &path,
-            "view: compact\ntheme: light\nplain_mode: user\nwatch:\n  interval: 5\n",
+            "view: compact\ntheme: light\ncolor: off\nplain_mode: user\nwatch:\n  interval: 5\n",
         )
         .unwrap();
 
@@ -231,6 +251,7 @@ mod tests {
         assert!(warning.is_none());
         assert_eq!(config.view, View::Compact);
         assert_eq!(config.theme, "light");
+        assert_eq!(config.color, ColorMode::Off);
         assert_eq!(config.plain_mode, PlainMode::User);
         assert_eq!(config.watch.interval, 5);
     }
@@ -249,5 +270,16 @@ mod tests {
         assert!(warning.contains(&path.display().to_string()));
         assert_eq!(config.view, View::Block);
         assert_eq!(config.theme, "dark");
+    }
+
+    #[test]
+    fn load_defaults_color_to_auto() {
+        let temp = tempdir().unwrap();
+        let path = temp.path().join(".config/me/config.yaml");
+
+        let (config, warning) = Config::load_from_path(Some(path));
+
+        assert!(warning.is_none());
+        assert_eq!(config.color, ColorMode::Auto);
     }
 }

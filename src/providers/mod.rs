@@ -3,7 +3,7 @@ pub mod network;
 pub mod runtime;
 
 use crate::context;
-use crate::model::MeInfo;
+use crate::model::{MeInfo, PwdInfo};
 
 pub fn collect(config: &crate::config::ContextConfig, fast: bool, collect_network: bool) -> MeInfo {
     let identity = identity::collect();
@@ -25,8 +25,18 @@ pub fn collect(config: &crate::config::ContextConfig, fast: bool, collect_networ
                 local_ips: Vec::new(),
             }
         },
+        pwd: collect_pwd(),
         identity,
         runtime,
         context,
     }
+}
+
+fn collect_pwd() -> Option<PwdInfo> {
+    let raw = std::env::current_dir().ok()?;
+    let raw = raw.to_string_lossy().into_owned();
+    Some(PwdInfo {
+        display: raw.clone(),
+        raw,
+    })
 }

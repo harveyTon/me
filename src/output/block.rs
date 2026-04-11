@@ -45,6 +45,9 @@ pub fn render_block(info: &MeInfo, fields: &[Field], options: &RenderOptions) ->
     let rows = rows(info, fields, options, requested_subset);
     let width = rows.iter().map(|row| row.key.len()).max().unwrap_or(0);
     for row in rows {
+        if row.add_gap_before && !out.is_empty() && !out.ends_with("\n\n") {
+            out.push('\n');
+        }
         let key = row.key;
         let value = row.value;
         let label = format!("{key}:");
@@ -86,6 +89,7 @@ pub fn render_block(info: &MeInfo, fields: &[Field], options: &RenderOptions) ->
 struct Row {
     key: &'static str,
     value: String,
+    add_gap_before: bool,
     add_gap_after: bool,
 }
 
@@ -112,28 +116,39 @@ fn row(info: &MeInfo, field: Field, options: &RenderOptions) -> Option<Row> {
         Field::Groups => Some(Row {
             key: "groups",
             value: compact_list(&info.identity.groups, 3),
+            add_gap_before: false,
             add_gap_after: false,
         })
         .filter(|row| !row.value.is_empty()),
         Field::Network => Some(Row {
             key: "network",
             value: prefixed_value(options, "network", compact_list(&info.network.local_ips, 1)),
+            add_gap_before: false,
             add_gap_after: false,
         })
         .filter(|row| !row.value.is_empty()),
+        Field::Pwd => value_for(info, field).map(|value| Row {
+            key: field.key(),
+            value,
+            add_gap_before: true,
+            add_gap_after: false,
+        }),
         Field::Tty => value_for(info, field).map(|value| Row {
             key: field.key(),
             value,
+            add_gap_before: false,
             add_gap_after: false,
         }),
         Field::Privilege => value_for(info, field).map(|value| Row {
             key: field.key(),
             value: prefixed_value(options, "privilege", value),
+            add_gap_before: false,
             add_gap_after: false,
         }),
         _ => value_for(info, field).map(|value| Row {
             key: field.key(),
             value,
+            add_gap_before: false,
             add_gap_after: false,
         }),
     }
@@ -146,6 +161,7 @@ fn multiline_row(key: &'static str, values: &[String]) -> Option<Row> {
     Some(Row {
         key,
         value: format!("\n  {}", values.join("\n  ")),
+        add_gap_before: false,
         add_gap_after: false,
     })
 }

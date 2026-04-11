@@ -23,6 +23,11 @@ pub fn render_json(info: &MeInfo, fields: &[Field]) -> anyhow::Result<String> {
             Field::Sudo => insert(&mut out, "sudo", json!(info.sudo)),
             Field::Ssh => insert(&mut out, "ssh", json!(info.ssh)),
             Field::Network => insert(&mut out, "network", json!(info.network)),
+            Field::Pwd => {
+                if let Some(pwd) = &info.pwd {
+                    insert(&mut out, "pwd", json!(pwd));
+                }
+            }
             Field::Context => {
                 if let Some(context) = context_json(info) {
                     insert(&mut out, "context", context);

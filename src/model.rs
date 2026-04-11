@@ -17,6 +17,7 @@ pub enum Field {
     Sudo,
     Ssh,
     Network,
+    Pwd,
     Context,
 }
 
@@ -36,6 +37,7 @@ impl Field {
             Self::Sudo,
             Self::Ssh,
             Self::Network,
+            Self::Pwd,
             Self::Context,
         ]
     }
@@ -55,6 +57,7 @@ impl Field {
             Self::Sudo => "sudo",
             Self::Ssh => "ssh",
             Self::Network => "network",
+            Self::Pwd => "pwd",
             Self::Context => "context",
         }
     }
@@ -78,6 +81,7 @@ impl FromStr for Field {
             "sudo" => Ok(Self::Sudo),
             "ssh" => Ok(Self::Ssh),
             "network" | "ip" => Ok(Self::Network),
+            "pwd" | "cwd" => Ok(Self::Pwd),
             "context" => Ok(Self::Context),
             other => Err(format!("unknown field '{other}'")),
         }
@@ -110,6 +114,12 @@ pub struct RuntimeInfo {
 #[derive(Debug, Clone, Serialize)]
 pub struct NetworkInfo {
     pub local_ips: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PwdInfo {
+    pub raw: String,
+    pub display: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -152,5 +162,6 @@ pub struct MeInfo {
     pub sudo: bool,
     pub ssh: bool,
     pub network: NetworkInfo,
+    pub pwd: Option<PwdInfo>,
     pub context: ContextInfo,
 }

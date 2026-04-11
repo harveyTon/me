@@ -28,6 +28,7 @@ pub(crate) fn value_for(info: &MeInfo, field: Field) -> Option<String> {
         Field::Sudo => Some(if info.sudo { "yes" } else { "no" }.into()),
         Field::Ssh => Some(if info.ssh { "yes" } else { "no" }.into()),
         Field::Network => Some(compact_list(&info.network.local_ips, 1)).filter(|s| !s.is_empty()),
+        Field::Pwd => info.pwd.as_ref().map(|pwd| pwd.display.clone()),
         Field::Context => context_value(info),
     }
 }

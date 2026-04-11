@@ -24,7 +24,7 @@ pub fn run() -> anyhow::Result<()> {
     let fields = fields(selected_fields, &config);
     let collect_network = should_collect_network(cli.fast, explicit_network);
     let options = RenderOptions {
-        color: crate::util::color::should_color(cli.no_color),
+        color: crate::util::color::should_color(cli.no_color, config.color),
         icons: if cli.no_color {
             crate::config::IconMode::Off
         } else {

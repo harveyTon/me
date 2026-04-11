@@ -1,5 +1,9 @@
 {
   "host": "MacBook",
+  "pwd": {
+    "display": "/Users/tiger/dev/me",
+    "raw": "/Users/tiger/dev/me"
+  },
   "ssh": false,
   "sudo": false,
   "user": "tiger"

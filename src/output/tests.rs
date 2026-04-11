@@ -1,6 +1,6 @@
 use crate::config::IconMode;
 use crate::model::{
-    ContainerContext, ContextInfo, Field, GitContext, MeInfo, NetworkInfo, ProjectContext,
+    ContainerContext, ContextInfo, Field, GitContext, MeInfo, NetworkInfo, ProjectContext, PwdInfo,
     RuntimeInfo, SshContext, SystemIdentity,
 };
 use crate::output::{RenderOptions, render_block, render_compact, render_config, render_json};
@@ -40,6 +40,10 @@ fn sample_info() -> MeInfo {
                 "172.16.0.3".into(),
             ],
         },
+        pwd: Some(PwdInfo {
+            raw: "/Users/tiger/dev/me".into(),
+            display: "/Users/tiger/dev/me".into(),
+        }),
         context: ContextInfo {
             ssh: Some(SshContext {
                 remote: true,
@@ -90,6 +94,14 @@ fn json_default_output_still_includes_shell() {
 }
 
 #[test]
+fn json_default_output_includes_pwd_object() {
+    let rendered = render_json(&sample_info(), &Field::defaults()).unwrap();
+    assert!(rendered.contains("\"pwd\""));
+    assert!(rendered.contains("\"raw\": \"/Users/tiger/dev/me\""));
+    assert!(rendered.contains("\"display\": \"/Users/tiger/dev/me\""));
+}
+
+#[test]
 fn json_ends_with_newline_for_terminal_output() {
     let rendered = render_json(&sample_info(), &[Field::User]).unwrap();
     assert!(rendered.ends_with('\n'));
@@ -98,9 +110,14 @@ fn json_ends_with_newline_for_terminal_output() {
 #[test]
 fn config_format_is_stable() {
     let options = RenderOptions::plain_for_tests();
-    let rendered = render_config(&sample_info(), &[Field::User, Field::Shell], &options);
+    let rendered = render_config(
+        &sample_info(),
+        &[Field::User, Field::Shell, Field::Pwd],
+        &options,
+    );
     assert!(rendered.contains("user = tiger"));
     assert!(rendered.contains("shell = zsh"));
+    assert!(rendered.contains("pwd = /Users/tiger/dev/me"));
 }
 
 #[test]
@@ -135,6 +152,20 @@ fn block_default_output_suppresses_shell_body_row_only() {
     );
     assert!(rendered.starts_with("tiger@MacBook  zsh\n\n"));
     assert!(!rendered.contains("\nshell:"));
+}
+
+#[test]
+fn block_default_output_includes_pwd_before_context() {
+    let rendered = render_block(
+        &sample_info(),
+        &Field::defaults(),
+        &RenderOptions::plain_for_tests(),
+    );
+    assert!(
+        rendered.contains(
+            "network:    192.168.1.10 (+2)\n\npwd:        /Users/tiger/dev/me\n\ncontext:"
+        )
+    );
 }
 
 #[test]
@@ -268,7 +299,7 @@ fn compact_limits_context_tags() {
     let mut info = sample_info();
     info.ssh = true;
     let rendered = render_compact(&info, &Field::defaults());
-    assert!(rendered.contains(" · ssh · rust git:main"));
+    assert!(rendered.contains(" · ssh · rust git:main · me"));
     assert!(!rendered.contains("docker"));
     assert!(!rendered.contains("zsh"));
 }
@@ -281,7 +312,7 @@ fn compact_uses_detected_container_kind() {
         id: None,
     });
     let rendered = render_compact(&info, &Field::defaults());
-    assert!(rendered.contains(" · container · "));
+    assert!(rendered.contains(" · container · rust git:main · me"));
     assert!(!rendered.contains(" · docker · "));
 }
 
@@ -311,7 +342,13 @@ fn compact_output_matches_golden_snapshot() {
 fn json_output_matches_golden_snapshot() {
     let rendered = render_json(
         &sample_info(),
-        &[Field::User, Field::Host, Field::Sudo, Field::Ssh],
+        &[
+            Field::User,
+            Field::Host,
+            Field::Pwd,
+            Field::Sudo,
+            Field::Ssh,
+        ],
     )
     .unwrap();
     assert_eq!(
@@ -349,7 +386,7 @@ fn block_shows_git_only_when_no_project() {
 fn compact_shows_both_project_and_git() {
     let info = sample_info();
     let rendered = render_compact(&info, &Field::defaults());
-    assert!(rendered.contains("rust git:main"));
+    assert!(rendered.contains("rust git:main · me"));
 }
 
 #[test]
@@ -357,7 +394,7 @@ fn compact_shows_project_only_when_no_git() {
     let mut info = sample_info();
     info.context.git = None;
     let rendered = render_compact(&info, &Field::defaults());
-    assert!(rendered.contains(" · rust\n"));
+    assert!(rendered.contains(" · rust · me\n"));
     assert!(!rendered.contains("git:"));
 }
 
@@ -367,7 +404,7 @@ fn compact_shows_git_only_when_no_project() {
     info.context.project = None;
     let rendered = render_compact(&info, &Field::defaults());
     assert!(!rendered.contains("rust"));
-    assert!(rendered.contains(" · git:main\n"));
+    assert!(rendered.contains(" · git:main · me\n"));
 }
 
 #[test]
