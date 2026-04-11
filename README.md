@@ -1,3 +1,5 @@
+**English** | [中文](README_CN.md)
+
 # me
 
 A modern, context-aware replacement for `whoami`.
