@@ -97,6 +97,18 @@ Expand-Archive "$tmpdir\me.zip" -DestinationPath $tmpdir -Force
 
 ## Homebrew
 
+The release workflow updates `harveyTon/homebrew-me` automatically after the GitHub Release is published.
+
+Required repository secret:
+
+```txt
+HOMEBREW_TAP_TOKEN
+```
+
+Use a fine-grained token with contents write access to `harveyTon/homebrew-me`.
+
+If the tap update job fails, update the formula manually:
+
 - Generate the release tarball SHA:
 
 ```bash

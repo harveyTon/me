@@ -25,7 +25,19 @@ Standardized Homebrew distribution path:
 - Tap name: `harveyTon/me`
 - Formula path: `Formula/me.rb`
 
-## Publish The Formula
+## Automatic Updates
+
+The `me` release workflow updates this tap automatically after a GitHub Release is published.
+
+Required secret in `harveyTon/me`:
+
+```txt
+HOMEBREW_TAP_TOKEN
+```
+
+Use a fine-grained token with contents write access to `harveyTon/homebrew-me`.
+
+## Manual Fallback
 
 1. Create the tap repository:
 
