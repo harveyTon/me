@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${VERSION:-v0.2.2}"
+VERSION="${VERSION:-v0.2.3}"
 DIST_DIR="${DIST_DIR:-dist}"
 TARGET="${1:-host}"
 

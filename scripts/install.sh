@@ -16,7 +16,7 @@ Usage:
 
 Examples:
   scripts/install.sh
-  scripts/install.sh v0.2.2
+  scripts/install.sh v0.2.3
 EOF
 }
 

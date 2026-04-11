@@ -265,7 +265,7 @@ context:
 
 ## 发布
 
-当前版本为 `v0.2.2`。版本号遵循语义化版本规范。
+当前版本为 `v0.2.3`。版本号遵循语义化版本规范。
 
 构建本地发布产物:
 
@@ -280,18 +280,18 @@ Linux ARM64 交叉编译在主机不是 Linux ARM64 时使用 `cross`。Windows 
 创建发布标签:
 
 ```bash
-git tag -a v0.2.2 -m "Release v0.2.2"
-git push origin v0.2.2
+git tag -a v0.2.3 -m "Release v0.2.3"
+git push origin v0.2.3
 ```
 
 GitHub Actions 发布工作流会构建并上传:
 
-- `me-v0.2.2-macos-arm64.tar.gz`
-- `me-v0.2.2-macos-x64.tar.gz`
-- `me-v0.2.2-linux-x64.tar.gz`
-- `me-v0.2.2-linux-arm64.tar.gz`
-- `me-v0.2.2-windows-x64.zip`
-- `me-v0.2.2-windows-arm64.zip`
+- `me-v0.2.3-macos-arm64.tar.gz`
+- `me-v0.2.3-macos-x64.tar.gz`
+- `me-v0.2.3-linux-x64.tar.gz`
+- `me-v0.2.3-linux-arm64.tar.gz`
+- `me-v0.2.3-windows-x64.zip`
+- `me-v0.2.3-windows-arm64.zip`
 
 完整的发布清单请参见 `RELEASE_CHECKLIST.md`。
 

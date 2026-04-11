@@ -265,7 +265,7 @@ There is no heavy UI, no daemon, and no plugin system. The output is plain text 
 
 ## Release
 
-The current version is `v0.2.2`. Releases follow semantic versioning.
+The current version is `v0.2.3`. Releases follow semantic versioning.
 
 Build local release artifacts:
 
@@ -280,18 +280,18 @@ Linux ARM64 cross-compilation uses `cross` when the host is not Linux ARM64. Win
 Create the release tag:
 
 ```bash
-git tag -a v0.2.2 -m "Release v0.2.2"
-git push origin v0.2.2
+git tag -a v0.2.3 -m "Release v0.2.3"
+git push origin v0.2.3
 ```
 
 The GitHub Actions release workflow builds and uploads:
 
-- `me-v0.2.2-macos-arm64.tar.gz`
-- `me-v0.2.2-macos-x64.tar.gz`
-- `me-v0.2.2-linux-x64.tar.gz`
-- `me-v0.2.2-linux-arm64.tar.gz`
-- `me-v0.2.2-windows-x64.zip`
-- `me-v0.2.2-windows-arm64.zip`
+- `me-v0.2.3-macos-arm64.tar.gz`
+- `me-v0.2.3-macos-x64.tar.gz`
+- `me-v0.2.3-linux-x64.tar.gz`
+- `me-v0.2.3-linux-arm64.tar.gz`
+- `me-v0.2.3-windows-x64.zip`
+- `me-v0.2.3-windows-arm64.zip`
 
 See `RELEASE_CHECKLIST.md` for the full release checklist.
 
