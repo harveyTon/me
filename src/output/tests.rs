@@ -5,6 +5,10 @@ use crate::model::{
 };
 use crate::output::{RenderOptions, render_block, render_compact, render_config, render_json};
 
+fn normalize_newlines(value: &str) -> String {
+    value.replace("\r\n", "\n")
+}
+
 fn sample_info() -> MeInfo {
     MeInfo {
         identity: SystemIdentity {
@@ -201,13 +205,19 @@ fn block_output_matches_golden_snapshot() {
         &Field::defaults(),
         &RenderOptions::plain_for_tests(),
     );
-    assert_eq!(rendered, include_str!("../../tests/golden/block.txt"));
+    assert_eq!(
+        normalize_newlines(&rendered),
+        normalize_newlines(include_str!("../../tests/golden/block.txt"))
+    );
 }
 
 #[test]
 fn compact_output_matches_golden_snapshot() {
     let rendered = render_compact(&sample_info(), &Field::defaults());
-    assert_eq!(rendered, include_str!("../../tests/golden/compact.txt"));
+    assert_eq!(
+        normalize_newlines(&rendered),
+        normalize_newlines(include_str!("../../tests/golden/compact.txt"))
+    );
 }
 
 #[test]
@@ -217,5 +227,8 @@ fn json_output_matches_golden_snapshot() {
         &[Field::User, Field::Host, Field::Sudo, Field::Ssh],
     )
     .unwrap();
-    assert_eq!(rendered, include_str!("../../tests/golden/json.txt"));
+    assert_eq!(
+        normalize_newlines(&rendered),
+        normalize_newlines(include_str!("../../tests/golden/json.txt"))
+    );
 }
