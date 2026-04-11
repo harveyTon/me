@@ -10,6 +10,7 @@ pub struct RenderOptions {
     pub color: bool,
     pub icons: IconMode,
     pub full: bool,
+    pub light_theme: bool,
 }
 
 impl RenderOptions {
@@ -19,6 +20,7 @@ impl RenderOptions {
             color: false,
             icons: IconMode::Off,
             full: false,
+            light_theme: false,
         }
     }
 }

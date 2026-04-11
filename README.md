@@ -233,6 +233,8 @@ Config file:
 ~/.config/me/config.yaml
 ```
 
+`me` creates the default config on first run if it does not exist. If the file is invalid, `me` prints a warning and falls back to built-in defaults.
+
 Minimal example:
 
 ```yaml
@@ -260,7 +262,7 @@ There is no heavy UI, no daemon, and no plugin system. The output is plain text 
 
 ## Release
 
-The current version is `v0.1.1`. Releases follow semantic versioning.
+The current version is `v0.1.2`. Releases follow semantic versioning.
 
 Build local release artifacts:
 
@@ -275,18 +277,18 @@ Linux ARM64 cross-compilation uses `cross` when the host is not Linux ARM64. Win
 Create the release tag:
 
 ```bash
-git tag -a v0.1.1 -m "Release v0.1.1"
-git push origin v0.1.1
+git tag -a v0.1.2 -m "Release v0.1.2"
+git push origin v0.1.2
 ```
 
 The GitHub Actions release workflow builds and uploads:
 
-- `me-v0.1.1-macos-arm64.tar.gz`
-- `me-v0.1.1-macos-x64.tar.gz`
-- `me-v0.1.1-linux-x64.tar.gz`
-- `me-v0.1.1-linux-arm64.tar.gz`
-- `me-v0.1.1-windows-x64.zip`
-- `me-v0.1.1-windows-arm64.zip`
+- `me-v0.1.2-macos-arm64.tar.gz`
+- `me-v0.1.2-macos-x64.tar.gz`
+- `me-v0.1.2-linux-x64.tar.gz`
+- `me-v0.1.2-linux-arm64.tar.gz`
+- `me-v0.1.2-windows-x64.zip`
+- `me-v0.1.2-windows-arm64.zip`
 
 See `RELEASE_CHECKLIST.md` for the full release checklist.
 
@@ -303,4 +305,4 @@ See `RELEASE_CHECKLIST.md` for the full release checklist.
 
 ## License
 
-MIT
+[MIT](LICENSE)

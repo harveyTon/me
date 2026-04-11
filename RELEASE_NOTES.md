@@ -1,8 +1,8 @@
 # Release Notes
 
-## v0.1.1
+## v0.1.2
 
-Linux compatibility update for `me`, a modern, context-aware replacement for `whoami`.
+Configuration reliability update for `me`, a modern, context-aware replacement for `whoami`.
 
 ### Highlights
 
@@ -16,8 +16,9 @@ Linux compatibility update for `me`, a modern, context-aware replacement for `wh
 - Watch mode for lightweight refreshes.
 - Copy mode for local clipboard workflows.
 - Man page included at `man/man1/me.1`.
-- Linux release artifacts are now built against an older userspace baseline for better runtime compatibility.
-- The installer verifies a staged binary before replacing an existing `me` on disk.
+- `me` now creates `~/.config/me/config.yaml` on first run when it does not exist.
+- Invalid config files now emit a warning and fall back to defaults instead of blocking normal use.
+- Theme settings now participate in the render path rather than being ignored.
 
 ### Install
 
@@ -66,9 +67,9 @@ Supported platforms:
 
 Expected binary artifact names:
 
-- `me-v0.1.1-macos-arm64.tar.gz`
-- `me-v0.1.1-macos-x64.tar.gz`
-- `me-v0.1.1-linux-x64.tar.gz`
-- `me-v0.1.1-linux-arm64.tar.gz`
-- `me-v0.1.1-windows-x64.zip`
-- `me-v0.1.1-windows-arm64.zip`
+- `me-v0.1.2-macos-arm64.tar.gz`
+- `me-v0.1.2-macos-x64.tar.gz`
+- `me-v0.1.2-linux-x64.tar.gz`
+- `me-v0.1.2-linux-arm64.tar.gz`
+- `me-v0.1.2-windows-x64.zip`
+- `me-v0.1.2-windows-arm64.zip`

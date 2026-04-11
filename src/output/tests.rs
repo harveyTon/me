@@ -124,6 +124,21 @@ fn colored_block_does_not_force_truecolor_on_values() {
 }
 
 #[test]
+fn colored_block_respects_light_theme_emphasis() {
+    let mut dark = RenderOptions::plain_for_tests();
+    dark.color = true;
+
+    let mut light = RenderOptions::plain_for_tests();
+    light.color = true;
+    light.light_theme = true;
+
+    let dark_rendered = render_block(&sample_info(), &Field::defaults(), &dark);
+    let light_rendered = render_block(&sample_info(), &Field::defaults(), &light);
+
+    assert_ne!(dark_rendered, light_rendered);
+}
+
+#[test]
 fn icon_mode_on_keeps_block_output_plain_text_safe() {
     let mut options = RenderOptions::plain_for_tests();
     options.icons = IconMode::On;

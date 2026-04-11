@@ -15,7 +15,10 @@ pub enum AppMode {
 
 pub fn run() -> anyhow::Result<()> {
     let cli = Cli::parse_args();
-    let config = Config::load()?;
+    let (config, config_warning) = Config::load();
+    if let Some(warning) = config_warning {
+        eprintln!("me: {warning}");
+    }
     let fields = fields(&cli, &config);
     let options = RenderOptions {
         color: crate::util::color::should_color(cli.no_color),
@@ -25,6 +28,7 @@ pub fn run() -> anyhow::Result<()> {
             config.icons
         },
         full: cli.full,
+        light_theme: config.is_light_theme(),
     };
     let mode = mode(&cli, &config);
 

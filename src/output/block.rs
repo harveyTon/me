@@ -13,13 +13,21 @@ pub fn render_block(info: &MeInfo, fields: &[Field], options: &RenderOptions) ->
     let requested_subset = fields != Field::defaults().as_slice();
     if !requested_subset {
         let user = if options.color {
-            info.identity.user.bold().green().to_string()
+            if options.light_theme {
+                info.identity.user.bold().blue().to_string()
+            } else {
+                info.identity.user.bold().green().to_string()
+            }
         } else {
             info.identity.user.clone()
         };
         let host = display_host(&info.identity.host);
         let host = if options.color && info.ssh {
-            host.yellow().bold().to_string()
+            if options.light_theme {
+                host.bold().to_string()
+            } else {
+                host.yellow().bold().to_string()
+            }
         } else {
             host
         };
