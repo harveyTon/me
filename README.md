@@ -9,74 +9,75 @@ A modern, context-aware replacement for `whoami`.
 ```txt
 user@dev-machine  zsh
 
-uid:        501
-gid:        20
 groups:     staff, admin, _developer (+3)
-shell:      zsh
-pid:        12345
-ppid:       6789
-tty:        ttys001
 privilege:  user
-sudo:       no
 ssh:        no
 network:    192.168.0.10 (+2)
 
 context:    rust (rustc 1.94.0)
 ```
 
+## Installation
+
+### macOS (Homebrew)
+
+```bash
+brew tap harveyTon/me
+brew install me
+```
+
+### Download binary
+
+Releases: [github.com/harveyTon/me/releases](https://github.com/harveyTon/me/releases)
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh)
+```
+
+### From Source
+
+```bash
+git clone https://github.com/harveyTon/me.git
+cd me
+cargo build --locked --release
+```
+
+Binary:
+
+```bash
+target/release/me
+```
+
+### Verify the install
+
+```bash
+me
+me --compact
+```
+
 ## Why `me`
 
-`whoami` answers one question:
+`whoami` is great when all you want is the username:
 
 ```console
 $ whoami
 user
 ```
 
-`me` answers the same question with local context:
+`me` keeps that shape, but adds the bits I usually end up checking right after:
 
 ```console
 $ me
 user@dev-machine  zsh
-
-uid:        501
-gid:        20
-groups:     staff, admin, _developer (+3)
-shell:      zsh
-pid:        12345
-ppid:       6789
-tty:        ttys001
-privilege:  user
-sudo:       no
+...
 ssh:        no
 network:    192.168.0.10 (+2)
-
 context:    rust (rustc 1.94.0)
 ```
 
-The goal is not to list everything about the system. The goal is to show the identity and session details that matter most in a calm, readable form.
+The goal is still small and local: identity first, context second, and no drift into a general system inspector.
 
 ## Examples
-
-### Local Rust Project
-
-```txt
-user@dev-machine  zsh
-
-uid:        501
-gid:        20
-groups:     staff, admin, _developer (+3)
-shell:      zsh
-pid:        12345
-ppid:       6789
-tty:        ttys001
-privilege:  user
-sudo:       no
-ssh:        no
-network:    192.168.0.10 (+2)
-
-context:    rust (rustc 1.94.0)
-```
 
 ### SSH Session
 
@@ -122,124 +123,6 @@ context:    rust (rustc 1.94.0)
 
 ```txt
 user@dev-machine · zsh · user · local · rust
-```
-
-## Installation
-
-### Homebrew (recommended on macOS)
-
-```bash
-brew tap harveyTon/me
-brew install me
-```
-
-Tap repository: `harveyTon/homebrew-me`  
-Formula path: `Formula/me.rb`
-
-### Download a prebuilt binary
-
-Supported release artifacts:
-
-- `me-v0.1.0-macos-arm64.tar.gz`
-- `me-v0.1.0-macos-x64.tar.gz`
-- `me-v0.1.0-linux-x64.tar.gz`
-- `me-v0.1.0-linux-arm64.tar.gz`
-- `me-v0.1.0-windows-x64.zip`
-- `me-v0.1.0-windows-arm64.zip`
-
-One-line installer for macOS and Linux:
-
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh)
-```
-
-The installer prefers `/usr/local/bin` when it is writable, otherwise it installs to `~/.local/bin`.
-
-Pinned version:
-
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh) -- v0.1.0
-```
-
-Manual install on macOS:
-
-```bash
-curl -fsSL -o me.tar.gz https://github.com/harveyTon/me/releases/download/v0.1.0/me-v0.1.0-macos-arm64.tar.gz
-tar -xzf me.tar.gz
-install -d ~/.local/bin
-install -m 0755 me ~/.local/bin/me
-```
-
-Manual install on Linux:
-
-```bash
-curl -L -o me.tar.gz https://github.com/harveyTon/me/releases/download/v0.1.0/me-v0.1.0-linux-x64.tar.gz
-tar -xzf me.tar.gz
-mkdir -p ~/.local/bin
-install -m 0755 me ~/.local/bin/me
-```
-
-Windows:
-
-```powershell
-Invoke-WebRequest -Uri https://github.com/harveyTon/me/releases/download/v0.1.0/me-v0.1.0-windows-x64.zip -OutFile me.zip
-Expand-Archive .\me.zip -DestinationPath .
-New-Item -ItemType Directory -Force "$HOME\AppData\Local\Programs\me" | Out-Null
-Move-Item .\me.exe "$HOME\AppData\Local\Programs\me\me.exe" -Force
-```
-
-Add `%USERPROFILE%\AppData\Local\Programs\me` to the user `Path` environment variable if `me` is not found in a new terminal.
-
-If `me` is not found after install, add the binary directory to `PATH`:
-
-- `/usr/local/bin`
-- `~/.local/bin`
-- Windows: `%USERPROFILE%\AppData\Local\Programs\me`
-
-Checksums are published with each GitHub release in `SHA256SUMS.txt`.
-
-### Cargo
-
-Current tag install:
-
-```bash
-cargo install --git https://github.com/harveyTon/me --tag v0.1.0
-```
-
-After the crate is published to crates.io:
-
-```bash
-cargo install me
-```
-
-### From Source
-
-```bash
-git clone https://github.com/harveyTon/me.git
-cd me
-cargo build --locked --release
-```
-
-Binary:
-
-```bash
-target/release/me
-```
-
-Optional man page install:
-
-```bash
-install -d ~/.local/share/man/man1
-install -m 0644 man/man1/me.1 ~/.local/share/man/man1/me.1
-mandb ~/.local/share/man 2>/dev/null || true
-man me
-```
-
-### Verify the install
-
-```bash
-me
-me --compact
 ```
 
 ## Usage
@@ -415,7 +298,7 @@ See `RELEASE_CHECKLIST.md` for the full release checklist.
 - Optimize startup time for prompt usage and add a lighter fast path for frequent invocation.
 - Improve existing project detection and add lightweight Git branch context where it stays quiet and useful.
 - Improve lightweight container detection without turning `me` into a general system inspector.
-- Finalize Homebrew distribution, keep release binaries aligned across platforms, and maintain a simple install script.
+- Keep release binaries, Homebrew distribution, and the install script aligned across platforms.
 - Expand snapshot coverage for output stability and keep CLI help and usage examples tight.
 
 ## License
