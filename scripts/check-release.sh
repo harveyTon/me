@@ -8,5 +8,4 @@ cargo build --locked --release
 bash -n scripts/build.sh
 bash -n scripts/build-dist.sh
 bash -n scripts/install.sh
-ruby -c Formula/me.rb
 MANWIDTH=80 man ./man/man1/me.1 >/dev/null

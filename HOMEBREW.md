@@ -53,21 +53,15 @@ cd homebrew-me
 mkdir -p Formula
 ```
 
-3. Copy the formula:
-
-```bash
-cp ../me/Formula/me.rb Formula/me.rb
-```
-
-4. Generate the release tarball SHA after `v0.2.1` is pushed:
+3. Generate the release tarball SHA after `v0.2.1` is pushed:
 
 ```bash
 curl -L https://github.com/harveyTon/me/archive/refs/tags/v0.2.1.tar.gz | shasum -a 256
 ```
 
-5. Update the URL and SHA in `Formula/me.rb`.
+4. Update the URL and SHA in `Formula/me.rb`.
 
-6. Tap, audit, and install locally:
+5. Tap, audit, and install locally:
 
 ```bash
 brew tap harveyTon/me
@@ -75,7 +69,7 @@ brew audit --strict --online harveyTon/me/me
 brew install me
 ```
 
-7. Commit and push:
+6. Commit and push:
 
 ```bash
 git add Formula/me.rb
