@@ -158,7 +158,7 @@ The installer prefers `/usr/local/bin` when it is writable, otherwise it install
 Pinned version:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/v0.1.0/scripts/install.sh) -- v0.1.0
+bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh) -- v0.1.0
 ```
 
 Manual install on macOS:

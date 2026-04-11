@@ -5,6 +5,7 @@ OWNER="harveyTon"
 REPO="me"
 DEFAULT_INSTALL_DIR="/usr/local/bin"
 FALLBACK_INSTALL_DIR="${HOME}/.local/bin"
+TMPDIR_CLEANUP=""
 
 usage() {
   cat <<'EOF'
@@ -26,6 +27,12 @@ log() {
 fail() {
   printf 'error: %s\n' "$*" >&2
   exit 1
+}
+
+cleanup() {
+  if [[ -n "${TMPDIR_CLEANUP:-}" ]]; then
+    rm -rf "${TMPDIR_CLEANUP}"
+  fi
 }
 
 require_command() {
@@ -88,6 +95,7 @@ verify_checksum() {
   local checksum_path="$2"
   local artifact="$3"
   local tool
+  local checksum_line
   tool="$(checksum_tool)"
 
   [[ -n "${tool}" ]] || {
@@ -95,16 +103,25 @@ verify_checksum() {
     return
   }
 
-  if ! grep -F " ${artifact}" "${checksum_path}" >/dev/null 2>&1; then
+  checksum_line="$(
+    awk -v artifact="${artifact}" '
+      $2 == artifact || $2 == ("./" artifact) {
+        print $1 "  " artifact
+        exit
+      }
+    ' "${checksum_path}"
+  )"
+
+  if [[ -z "${checksum_line}" ]]; then
     fail "checksum entry for ${artifact} was not found"
   fi
 
   (
     cd "$(dirname "${archive_path}")"
     if [[ "${tool}" == "sha256sum" ]]; then
-      grep -F " ${artifact}" "${checksum_path}" | sha256sum --check --status -
+      printf '%s\n' "${checksum_line}" | sha256sum --check --status -
     else
-      grep -F " ${artifact}" "${checksum_path}" | shasum -a 256 --check --status
+      printf '%s\n' "${checksum_line}" | shasum -a 256 --check --status
     fi
   ) || fail "checksum verification failed for ${artifact}"
 }
@@ -145,7 +162,8 @@ main() {
   release_base="https://github.com/${OWNER}/${REPO}/releases/download/${version}"
 
   tmpdir="$(mktemp -d)"
-  trap 'rm -rf "${tmpdir}"' EXIT
+  TMPDIR_CLEANUP="${tmpdir}"
+  trap cleanup EXIT
 
   archive_path="${tmpdir}/${artifact}"
   checksum_path="${tmpdir}/SHA256SUMS.txt"

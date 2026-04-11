@@ -121,6 +121,12 @@ GitHub Releases installer on macOS/Linux:
 bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh)
 ```
 
+Pinned version:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh) -- v0.1.0
+```
+
 Homebrew, after `harveyTon/homebrew-me` is published:
 
 ```bash
