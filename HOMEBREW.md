@@ -55,11 +55,12 @@ curl -L https://github.com/harveyTon/me/archive/refs/tags/v0.1.0.tar.gz | shasum
 
 5. Replace the placeholder SHA in `Formula/me.rb`.
 
-6. Audit and install locally:
+6. Tap, audit, and install locally:
 
 ```bash
-brew audit --strict --online Formula/me.rb
-brew install --build-from-source Formula/me.rb
+brew tap harveyTon/me
+brew audit --strict --online harveyTon/me/me
+brew install me
 ```
 
 7. Commit and push:
