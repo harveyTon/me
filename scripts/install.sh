@@ -16,7 +16,7 @@ Usage:
 
 Examples:
   scripts/install.sh
-  scripts/install.sh v0.1.0
+  scripts/install.sh v0.1.1
 EOF
 }
 
@@ -153,7 +153,7 @@ main() {
   require_command curl
   require_command tar
 
-  local version os arch artifact install_dir release_base tmpdir archive_path checksum_path binary_path
+  local version os arch artifact install_dir release_base tmpdir archive_path checksum_path binary_path staged_binary_path
   version="$(resolve_version "${1:-latest}")"
   os="$(detect_os)"
   arch="$(detect_arch)"
@@ -168,6 +168,7 @@ main() {
   archive_path="${tmpdir}/${artifact}"
   checksum_path="${tmpdir}/SHA256SUMS.txt"
   binary_path="${install_dir}/me"
+  staged_binary_path="${tmpdir}/me.install"
 
   log "Downloading ${artifact} from ${version}..."
   curl -fsSL "${release_base}/${artifact}" -o "${archive_path}" \
@@ -186,8 +187,9 @@ main() {
     log "Installing to ${binary_path}"
   fi
 
-  install -m 0755 "${tmpdir}/me" "${binary_path}" || fail "failed to install ${binary_path}"
-  "${binary_path}" --help >/dev/null 2>&1 || fail "installed binary failed verification"
+  install -m 0755 "${tmpdir}/me" "${staged_binary_path}" || fail "failed to stage ${binary_path}"
+  "${staged_binary_path}" --help >/dev/null 2>&1 || fail "downloaded binary failed verification on this system"
+  install -m 0755 "${staged_binary_path}" "${binary_path}" || fail "failed to install ${binary_path}"
 
   log "Installed me ${version} to ${binary_path}"
   if [[ ":${PATH}:" != *":${install_dir}:"* ]]; then

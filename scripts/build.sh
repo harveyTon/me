@@ -62,7 +62,16 @@ artifact_name() {
 }
 
 build_command() {
-  if [[ "$1" == "aarch64-unknown-linux-gnu" ]] && requires_cross "$1"; then
+  if [[ "${ME_FORCE_CROSS:-0}" == "1" ]]; then
+    if ! command -v cross >/dev/null 2>&1; then
+      echo "ME_FORCE_CROSS=1 requires cross; install with: cargo install cross --locked" >&2
+      exit 1
+    fi
+    echo cross
+    return
+  fi
+
+  if requires_cross "$1"; then
     if ! command -v cross >/dev/null 2>&1; then
       echo "target $1 requires cross on this host; install with: cargo install cross --locked" >&2
       exit 1
@@ -74,9 +83,14 @@ build_command() {
 }
 
 requires_cross() {
-  [[ "$1" == "aarch64-unknown-linux-gnu" ]] && {
-    [[ "$(uname -s)" != "Linux" ]] || [[ "$(uname -m)" != "aarch64" ]]
-  }
+  case "$1" in
+    aarch64-unknown-linux-gnu)
+      [[ "$(uname -s)" != "Linux" ]] || [[ "$(uname -m)" != "aarch64" ]]
+      ;;
+    *)
+      return 1
+      ;;
+  esac
 }
 
 ensure_supported_host() {

@@ -1,8 +1,8 @@
 # Release Notes
 
-## v0.1.0
+## v0.1.1
 
-Initial public release of `me`, a modern, context-aware replacement for `whoami`.
+Linux compatibility update for `me`, a modern, context-aware replacement for `whoami`.
 
 ### Highlights
 
@@ -16,6 +16,8 @@ Initial public release of `me`, a modern, context-aware replacement for `whoami`
 - Watch mode for lightweight refreshes.
 - Copy mode for local clipboard workflows.
 - Man page included at `man/man1/me.1`.
+- Linux release artifacts are now built against an older userspace baseline for better runtime compatibility.
+- The installer verifies a staged binary before replacing an existing `me` on disk.
 
 ### Install
 
@@ -30,18 +32,6 @@ One-line installer on macOS and Linux:
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh)
-```
-
-From the release tag:
-
-```bash
-cargo install --git https://github.com/harveyTon/me --tag v0.1.0
-```
-
-After crates.io publication:
-
-```bash
-cargo install me
 ```
 
 Homebrew tap, after publishing `harveyTon/homebrew-me`:
@@ -76,9 +66,9 @@ Supported platforms:
 
 Expected binary artifact names:
 
-- `me-v0.1.0-macos-arm64.tar.gz`
-- `me-v0.1.0-macos-x64.tar.gz`
-- `me-v0.1.0-linux-x64.tar.gz`
-- `me-v0.1.0-linux-arm64.tar.gz`
-- `me-v0.1.0-windows-x64.zip`
-- `me-v0.1.0-windows-arm64.zip`
+- `me-v0.1.1-macos-arm64.tar.gz`
+- `me-v0.1.1-macos-x64.tar.gz`
+- `me-v0.1.1-linux-x64.tar.gz`
+- `me-v0.1.1-linux-arm64.tar.gz`
+- `me-v0.1.1-windows-x64.zip`
+- `me-v0.1.1-windows-arm64.zip`
