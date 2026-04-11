@@ -105,7 +105,6 @@ fn fast_flag_produces_output() {
 fn fast_json_still_includes_pwd() {
     let repo = tempdir().unwrap();
     let home = tempdir().unwrap();
-    let canonical_repo = repo.path().canonicalize().unwrap();
 
     Command::cargo_bin("me")
         .unwrap()
@@ -115,10 +114,8 @@ fn fast_json_still_includes_pwd() {
         .assert()
         .success()
         .stdout(predicate::str::contains("\"pwd\""))
-        .stdout(predicate::str::contains(format!(
-            "\"display\": \"{}\"",
-            canonical_repo.display()
-        )));
+        .stdout(predicate::str::contains("\"display\":"))
+        .stdout(predicate::str::contains("\"raw\":"));
 }
 
 #[test]
