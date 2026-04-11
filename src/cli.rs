@@ -40,6 +40,12 @@ pub struct Cli {
         help_heading = "Interactive"
     )]
     pub interval: Option<u64>,
+    #[arg(
+        long,
+        help = "Skip slower context version checks for prompt usage",
+        help_heading = "Interactive"
+    )]
+    pub fast: bool,
     #[arg(long, num_args = 0..=1, value_name = "FIELD", help = "Copy a field, or prompt when omitted", help_heading = "Interactive")]
     pub copy: Option<Option<String>>,
     #[arg(

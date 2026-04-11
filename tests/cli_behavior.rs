@@ -88,3 +88,13 @@ fn json_omits_null_values() {
         .success()
         .stdout(predicate::str::contains("null").not());
 }
+
+#[test]
+fn fast_flag_produces_output() {
+    Command::cargo_bin("me")
+        .unwrap()
+        .arg("--fast")
+        .assert()
+        .success()
+        .stdout(predicate::str::is_empty().not());
+}

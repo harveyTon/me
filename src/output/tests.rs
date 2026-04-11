@@ -1,7 +1,7 @@
 use crate::config::IconMode;
 use crate::model::{
-    ContainerContext, ContextInfo, Field, MeInfo, NetworkInfo, ProjectContext, RuntimeInfo,
-    SshContext, SystemIdentity,
+    ContainerContext, ContextInfo, Field, GitContext, MeInfo, NetworkInfo, ProjectContext,
+    RuntimeInfo, SshContext, SystemIdentity,
 };
 use crate::output::{RenderOptions, render_block, render_compact, render_config, render_json};
 
@@ -51,7 +51,10 @@ fn sample_info() -> MeInfo {
             }),
             project: Some(ProjectContext {
                 kind: "rust".into(),
-                version: Some("rustc 1.0".into()),
+                version: Some("1.0".into()),
+            }),
+            git: Some(GitContext {
+                branch: "main".into(),
             }),
         },
     }
@@ -63,6 +66,27 @@ fn json_honors_selected_fields() {
     assert!(rendered.contains("\"user\""));
     assert!(rendered.contains("\"host\""));
     assert!(!rendered.contains("\"uid\""));
+}
+
+#[test]
+fn global_default_fields_still_include_shell() {
+    assert!(Field::defaults().contains(&Field::Shell));
+}
+
+#[test]
+fn config_default_output_still_includes_shell() {
+    let rendered = render_config(
+        &sample_info(),
+        &Field::defaults(),
+        &RenderOptions::plain_for_tests(),
+    );
+    assert!(rendered.contains("shell = zsh"));
+}
+
+#[test]
+fn json_default_output_still_includes_shell() {
+    let rendered = render_json(&sample_info(), &Field::defaults()).unwrap();
+    assert!(rendered.contains("\"shell\""));
 }
 
 #[test]
@@ -103,13 +127,24 @@ fn block_header_uses_subtle_shell_separator() {
 }
 
 #[test]
+fn block_default_output_suppresses_shell_body_row_only() {
+    let rendered = render_block(
+        &sample_info(),
+        &Field::defaults(),
+        &RenderOptions::plain_for_tests(),
+    );
+    assert!(rendered.starts_with("tiger@MacBook  zsh\n\n"));
+    assert!(!rendered.contains("\nshell:"));
+}
+
+#[test]
 fn block_uses_soft_section_spacing_without_titles() {
     let rendered = render_block(
         &sample_info(),
         &Field::defaults(),
         &RenderOptions::plain_for_tests(),
     );
-    assert!(rendered.contains("groups:     staff, admin, _developer (+2)\nshell:"));
+    assert!(rendered.contains("groups:     staff, admin, _developer (+2)\npid:"));
     assert!(rendered.contains("tty:        ttys001\nprivilege:"));
     assert!(!rendered.contains("runtime"));
     assert!(!rendered.contains("state"));
@@ -155,7 +190,7 @@ fn context_uses_soft_label_not_decorative_rule() {
         &Field::defaults(),
         &RenderOptions::plain_for_tests(),
     );
-    assert!(rendered.contains("\ncontext:    docker, rust (rustc 1.0)\n"));
+    assert!(rendered.contains("\ncontext:    docker, rust (1.0) · git(main)\n"));
     assert!(!rendered.contains("--- context ---"));
     assert!(!rendered.contains("\ncontext\n\n"));
 }
@@ -202,6 +237,7 @@ fn json_omits_null_context_members() {
     assert!(!rendered.contains("\"tty\""));
     assert!(!rendered.contains("\"container\""));
     assert!(rendered.contains("\"project\""));
+    assert!(rendered.contains("\"git\""));
 }
 
 #[test]
@@ -209,8 +245,21 @@ fn compact_limits_context_tags() {
     let mut info = sample_info();
     info.ssh = true;
     let rendered = render_compact(&info, &Field::defaults());
-    assert!(rendered.contains(" · ssh · rust"));
+    assert!(rendered.contains(" · ssh · rust git:main"));
     assert!(!rendered.contains("docker"));
+    assert!(!rendered.contains("zsh"));
+}
+
+#[test]
+fn compact_uses_detected_container_kind() {
+    let mut info = sample_info();
+    info.context.container = Some(ContainerContext {
+        kind: "container".into(),
+        id: None,
+    });
+    let rendered = render_compact(&info, &Field::defaults());
+    assert!(rendered.contains(" · container · "));
+    assert!(!rendered.contains(" · docker · "));
 }
 
 #[test]
@@ -246,4 +295,62 @@ fn json_output_matches_golden_snapshot() {
         normalize_newlines(&rendered),
         normalize_newlines(include_str!("../../tests/golden/json.txt"))
     );
+}
+
+#[test]
+fn block_shows_both_project_and_git() {
+    let info = sample_info();
+    let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
+    assert!(rendered.contains("rust (1.0) · git(main)"));
+}
+
+#[test]
+fn block_shows_project_only_when_no_git() {
+    let mut info = sample_info();
+    info.context.git = None;
+    let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
+    assert!(rendered.contains("rust (1.0)"));
+    assert!(!rendered.contains("git("));
+}
+
+#[test]
+fn block_shows_git_only_when_no_project() {
+    let mut info = sample_info();
+    info.context.project = None;
+    let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
+    assert!(!rendered.contains("rust"));
+    assert!(rendered.contains("git(main)"));
+}
+
+#[test]
+fn compact_shows_both_project_and_git() {
+    let info = sample_info();
+    let rendered = render_compact(&info, &Field::defaults());
+    assert!(rendered.contains("rust git:main"));
+}
+
+#[test]
+fn compact_shows_project_only_when_no_git() {
+    let mut info = sample_info();
+    info.context.git = None;
+    let rendered = render_compact(&info, &Field::defaults());
+    assert!(rendered.contains(" · rust\n"));
+    assert!(!rendered.contains("git:"));
+}
+
+#[test]
+fn compact_shows_git_only_when_no_project() {
+    let mut info = sample_info();
+    info.context.project = None;
+    let rendered = render_compact(&info, &Field::defaults());
+    assert!(!rendered.contains("rust"));
+    assert!(rendered.contains(" · git:main\n"));
+}
+
+#[test]
+fn json_shows_both_project_and_git() {
+    let info = sample_info();
+    let rendered = render_json(&info, &[Field::Context]).unwrap();
+    assert!(rendered.contains("\"project\""));
+    assert!(rendered.contains("\"git\""));
 }

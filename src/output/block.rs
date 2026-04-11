@@ -12,7 +12,9 @@ pub fn render_block(info: &MeInfo, fields: &[Field], options: &RenderOptions) ->
     let mut out = String::new();
     let requested_subset = fields != Field::defaults().as_slice();
     if !requested_subset {
-        let user = if options.color {
+        let user = if info.identity.uid == 0 {
+            "root".to_owned()
+        } else if options.color {
             if options.light_theme {
                 info.identity.user.bold().blue().to_string()
             } else {
@@ -97,7 +99,7 @@ fn rows(
         .iter()
         .filter(|field| {
             !matches!(field, Field::Context)
-                && (requested_subset || !matches!(field, Field::User | Field::Host))
+                && (requested_subset || !matches!(field, Field::User | Field::Host | Field::Shell))
         })
         .filter_map(|field| row(info, *field, options))
         .collect()
@@ -153,11 +155,18 @@ fn context_summary(info: &MeInfo) -> Option<String> {
     if let Some(container) = &info.context.container {
         parts.push(container.kind.clone());
     }
+    let mut project_parts = Vec::new();
     if let Some(project) = &info.context.project {
-        parts.push(match &project.version {
+        project_parts.push(match &project.version {
             Some(version) => format!("{} ({version})", project.kind),
             None => project.kind.clone(),
         });
+    }
+    if let Some(git) = &info.context.git {
+        project_parts.push(format!("git({})", git.branch));
+    }
+    if !project_parts.is_empty() {
+        parts.push(project_parts.join(" · "));
     }
     Some(parts.join(", ")).filter(|summary| !summary.is_empty())
 }

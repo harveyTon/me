@@ -130,11 +130,17 @@ pub struct ProjectContext {
     pub version: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct GitContext {
+    pub branch: String,
+}
+
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct ContextInfo {
     pub ssh: Option<SshContext>,
     pub container: Option<ContainerContext>,
     pub project: Option<ProjectContext>,
+    pub git: Option<GitContext>,
 }
 
 #[derive(Debug, Clone, Serialize)]

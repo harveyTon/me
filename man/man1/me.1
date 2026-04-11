@@ -1,4 +1,4 @@
-.TH ME 1 "2026-04-11" "me 0.1.0" "User Commands"
+.TH ME 1 "2026-04-11" "me 0.2.0" "User Commands"
 .SH NAME
 me \- a modern, context-aware replacement for whoami
 .SH SYNOPSIS
@@ -44,6 +44,9 @@ Refresh output in place.
 .TP
 .B \-\-interval \fISECONDS\fR
 Set the watch refresh interval in seconds.
+.TP
+.B \-\-fast
+Skip slower context version checks for prompt usage.
 .TP
 .B \-\-copy [\fIFIELD\fR]
 Copy a field to the clipboard, or prompt when omitted.
@@ -99,7 +102,8 @@ Refresh output every two seconds.
 .SH CONTEXT
 .B me
 detects a small set of local context signals: SSH sessions, Docker/container
-environments, Rust projects via Cargo.toml, and Node projects via package.json.
+environments, Rust projects via Cargo.toml, Node projects via package.json,
+and Git branches when the current directory is inside a Git work tree.
 .PP
 Context is summarized quietly in the default block output.
 .SH NOTES

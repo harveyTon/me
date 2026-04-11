@@ -43,6 +43,7 @@ pub struct ContextConfig {
     pub project: bool,
     pub container: bool,
     pub ssh: bool,
+    pub git: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -72,6 +73,7 @@ impl Default for ContextConfig {
             project: true,
             container: true,
             ssh: true,
+            git: true,
         }
     }
 }
@@ -185,6 +187,7 @@ context:
   project: true
   container: true
   ssh: true
+  git: true
 watch:
   interval: 1
 plain_mode: user_host

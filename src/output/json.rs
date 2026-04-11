@@ -54,6 +54,9 @@ fn context_json(info: &MeInfo) -> Option<Value> {
     if let Some(container) = &info.context.container {
         insert(&mut context, "container", json!(container));
     }
+    if let Some(git) = &info.context.git {
+        insert(&mut context, "git", json!(git));
+    }
     if let Some(project) = &info.context.project {
         insert(&mut context, "project", json!(project));
     }

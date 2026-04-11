@@ -16,7 +16,7 @@ privilege:  user
 ssh:        no
 network:    192.168.0.10 (+2)
 
-context:    rust (rustc 1.94.0)
+context:    rust (1.94.0)
 ```
 
 ## Installation
@@ -74,7 +74,7 @@ user@dev-machine  zsh
 ...
 ssh:        no
 network:    192.168.0.10 (+2)
-context:    rust (rustc 1.94.0)
+context:    rust (1.94.0)
 ```
 
 The goal is still small and local: identity first, context second, and no drift into a general system inspector.
@@ -89,7 +89,6 @@ user@server-01  bash
 uid:        1000
 gid:        1000
 groups:     user, deploy
-shell:      bash
 pid:        24811
 ppid:       24803
 tty:        pts/0
@@ -98,7 +97,7 @@ sudo:       no
 ssh:        yes
 network:    10.0.0.5
 
-context:    rust (rustc 1.94.0)
+context:    rust (1.94.0)
 ```
 
 ### sudo
@@ -109,7 +108,6 @@ root@server-01  bash
 uid:        0
 gid:        0
 groups:     root
-shell:      bash
 pid:        24902
 ppid:       24890
 tty:        pts/0
@@ -118,7 +116,7 @@ sudo:       yes
 ssh:        yes
 network:    10.0.0.5
 
-context:    rust (rustc 1.94.0)
+context:    rust (1.94.0)
 ```
 
 ### Compact Mode
@@ -150,6 +148,7 @@ Other modes:
 me --plain
 me --format config
 me --watch
+me --compact --fast
 me --full
 ```
 
@@ -202,11 +201,12 @@ me --json
 - Docker/container environments
 - Rust projects via `Cargo.toml`
 - Node projects via `package.json`
+- Git branches when the current directory is inside a Git work tree
 
 Context is summarized as a secondary signal:
 
 ```txt
-context:    rust (rustc 1.94.0)
+context:    rust (1.94.0) · git(main)
 ```
 
 The default command stays local-first. It does not query cloud identity, inspect remote services, or perform public IP lookups.
@@ -216,16 +216,16 @@ The default command stays local-first. It does not query cloud identity, inspect
 ### zsh
 
 ```zsh
-PROMPT='$(me --compact) %~ %# '
+PROMPT='$(me --compact --fast) %~ %# '
 ```
 
 ### bash
 
 ```bash
-PS1='$(me --compact) \w \$ '
+PS1='$(me --compact --fast) \w \$ '
 ```
 
-Prompt commands run often. If your prompt feels slow, keep `me --compact` out of the hot path or cache its output in your shell configuration.
+Prompt commands run often. `--fast` keeps the default network summary but skips slower context version checks. If your prompt still feels slow, keep `me --compact` out of the hot path or cache its output in your shell configuration.
 
 ## Configuration
 
@@ -248,6 +248,7 @@ context:
   project: true
   container: true
   ssh: true
+  git: true
 ```
 
 CLI flags override environment variables, which override config, which overrides defaults.
@@ -264,7 +265,7 @@ There is no heavy UI, no daemon, and no plugin system. The output is plain text 
 
 ## Release
 
-The current version is `v0.1.2`. Releases follow semantic versioning.
+The current version is `v0.2.0`. Releases follow semantic versioning.
 
 Build local release artifacts:
 
@@ -279,18 +280,18 @@ Linux ARM64 cross-compilation uses `cross` when the host is not Linux ARM64. Win
 Create the release tag:
 
 ```bash
-git tag -a v0.1.2 -m "Release v0.1.2"
-git push origin v0.1.2
+git tag -a v0.2.0 -m "Release v0.2.0"
+git push origin v0.2.0
 ```
 
 The GitHub Actions release workflow builds and uploads:
 
-- `me-v0.1.2-macos-arm64.tar.gz`
-- `me-v0.1.2-macos-x64.tar.gz`
-- `me-v0.1.2-linux-x64.tar.gz`
-- `me-v0.1.2-linux-arm64.tar.gz`
-- `me-v0.1.2-windows-x64.zip`
-- `me-v0.1.2-windows-arm64.zip`
+- `me-v0.2.0-macos-arm64.tar.gz`
+- `me-v0.2.0-macos-x64.tar.gz`
+- `me-v0.2.0-linux-x64.tar.gz`
+- `me-v0.2.0-linux-arm64.tar.gz`
+- `me-v0.2.0-windows-x64.zip`
+- `me-v0.2.0-windows-arm64.zip`
 
 See `RELEASE_CHECKLIST.md` for the full release checklist.
 
@@ -299,8 +300,8 @@ See `RELEASE_CHECKLIST.md` for the full release checklist.
 - Refine the default block output to remove small duplications and keep the identity summary primary.
 - Refine `--compact` for prompt usage and keep its output stable across common shell environments.
 - Improve output consistency across local, SSH, container, and non-interactive sessions.
-- Optimize startup time for prompt usage and add a lighter fast path for frequent invocation.
-- Improve existing project detection and add lightweight Git branch context where it stays quiet and useful.
+- Continue optimizing startup time for prompt usage while keeping the fast path predictable.
+- Refine existing project and Git branch detection where it stays quiet and useful.
 - Improve lightweight container detection without turning `me` into a general system inspector.
 - Keep release binaries, Homebrew distribution, and the install script aligned across platforms.
 - Expand snapshot coverage for output stability and keep CLI help and usage examples tight.

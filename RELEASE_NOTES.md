@@ -1,8 +1,8 @@
 # Release Notes
 
-## v0.1.2
+## v0.2.0
 
-Configuration reliability update for `me`, a modern, context-aware replacement for `whoami`.
+Prompt, context, and distribution update for `me`, a modern, context-aware replacement for `whoami`.
 
 ### Highlights
 
@@ -11,8 +11,10 @@ Configuration reliability update for `me`, a modern, context-aware replacement f
 - JSON output for scripts.
 - Config-style output for simple shell parsing.
 - Field selectors for common identity, runtime, state, and network fields.
-- Local context detection for SSH sessions, containers, Rust projects, and Node projects.
+- Local context detection for SSH sessions, containers, Rust projects, Node projects, and lightweight Git branch context.
 - SSH session detection remains meaningful under common `sudo` execution paths.
+- Default block output keeps the network summary visible, including in `--fast` mode.
+- `--fast` is available for prompt usage and skips slower context version checks without dropping explicit or default network output.
 - Watch mode for lightweight refreshes.
 - Copy mode for local clipboard workflows.
 - Man page included at `man/man1/me.1`.
@@ -67,9 +69,9 @@ Supported platforms:
 
 Expected binary artifact names:
 
-- `me-v0.1.2-macos-arm64.tar.gz`
-- `me-v0.1.2-macos-x64.tar.gz`
-- `me-v0.1.2-linux-x64.tar.gz`
-- `me-v0.1.2-linux-arm64.tar.gz`
-- `me-v0.1.2-windows-x64.zip`
-- `me-v0.1.2-windows-arm64.zip`
+- `me-v0.2.0-macos-arm64.tar.gz`
+- `me-v0.2.0-macos-x64.tar.gz`
+- `me-v0.2.0-linux-x64.tar.gz`
+- `me-v0.2.0-linux-arm64.tar.gz`
+- `me-v0.2.0-windows-x64.zip`
+- `me-v0.2.0-windows-arm64.zip`

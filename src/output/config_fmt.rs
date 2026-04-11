@@ -54,6 +54,9 @@ fn context_value(info: &MeInfo) -> Option<String> {
     if let Some(project) = &info.context.project {
         parts.push(project.kind.clone());
     }
+    if let Some(git) = &info.context.git {
+        parts.push(format!("git:{}", git.branch));
+    }
     Some(parts.join(", ")).filter(|s| !s.is_empty())
 }
 

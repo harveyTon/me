@@ -3,7 +3,6 @@ tiger@MacBook  zsh
 uid:        501
 gid:        20
 groups:     staff, admin, _developer (+2)
-shell:      zsh
 pid:        123
 ppid:       1
 tty:        ttys001
@@ -12,4 +11,4 @@ sudo:       no
 ssh:        no
 network:    192.168.1.10 (+2)
 
-context:    docker, rust (rustc 1.0)
+context:    docker, rust (1.0) · git(main)

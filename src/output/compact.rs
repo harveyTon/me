@@ -25,31 +25,42 @@ pub fn render_compact(info: &MeInfo, fields: &[Field]) -> String {
             }
         }
     } else {
-        parts.push(format!(
-            "{}@{}",
-            info.identity.user,
-            display_host(&info.identity.host)
-        ));
-        if let Some(shell) = &info.runtime.shell {
-            parts.push(shell.clone());
-        }
-        parts.push(info.privilege.clone());
-    }
-
-    if !requested_subset {
-        if info.ssh {
-            parts.push("ssh".into());
-        } else if let Some(container) = &info.context.container {
-            parts.push(container.kind.clone());
-        } else {
-            parts.push("local".into());
-        }
-        if let Some(project) = &info.context.project
-            && matches!(project.kind.as_str(), "rust" | "node")
-        {
-            parts.push(project.kind.clone());
+        parts.push(compact_identity(info));
+        parts.push(compact_env(info).to_owned());
+        if let Some(project) = compact_project(info) {
+            parts.push(project);
         }
     }
 
     format!("{}\n", parts.join(" · "))
+}
+
+fn compact_identity(info: &MeInfo) -> String {
+    let user = if info.identity.uid == 0 {
+        "root"
+    } else {
+        &info.identity.user
+    };
+    format!("{}@{}", user, display_host(&info.identity.host))
+}
+
+fn compact_env(info: &MeInfo) -> String {
+    if info.ssh {
+        "ssh".into()
+    } else if let Some(container) = &info.context.container {
+        container.kind.clone()
+    } else {
+        "local".into()
+    }
+}
+
+fn compact_project(info: &MeInfo) -> Option<String> {
+    let mut parts = Vec::new();
+    if let Some(project) = &info.context.project {
+        parts.push(project.kind.clone());
+    }
+    if let Some(git) = &info.context.git {
+        parts.push(format!("git:{}", git.branch));
+    }
+    Some(parts.join(" ")).filter(|s| !s.is_empty())
 }

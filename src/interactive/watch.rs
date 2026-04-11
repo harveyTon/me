@@ -15,6 +15,8 @@ pub fn run(
     mode: AppMode,
     options: RenderOptions,
     interval: u64,
+    fast: bool,
+    collect_network: bool,
 ) -> anyhow::Result<()> {
     let running = Arc::new(AtomicBool::new(true));
     let flag = running.clone();
@@ -23,7 +25,7 @@ pub fn run(
     })?;
 
     while running.load(Ordering::SeqCst) {
-        let info = crate::providers::collect(&config.context);
+        let info = crate::providers::collect(&config.context, fast, collect_network);
         print!(
             "\x1b[2J\x1b[H{}",
             crate::app::render(&info, fields, mode, &options)?

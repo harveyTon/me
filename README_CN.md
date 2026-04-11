@@ -16,7 +16,7 @@ privilege:  user
 ssh:        no
 network:    192.168.0.10 (+2)
 
-context:    rust (rustc 1.94.0)
+context:    rust (1.94.0)
 ```
 
 ## 安装
@@ -74,7 +74,7 @@ user@dev-machine  zsh
 ...
 ssh:        no
 network:    192.168.0.10 (+2)
-context:    rust (rustc 1.94.0)
+context:    rust (1.94.0)
 ```
 
 目标仍然是小巧和本地化：身份信息优先，上下文信息其次，不会演变成通用系统检测工具。
@@ -89,7 +89,6 @@ user@server-01  bash
 uid:        1000
 gid:        1000
 groups:     user, deploy
-shell:      bash
 pid:        24811
 ppid:       24803
 tty:        pts/0
@@ -98,7 +97,7 @@ sudo:       no
 ssh:        yes
 network:    10.0.0.5
 
-context:    rust (rustc 1.94.0)
+context:    rust (1.94.0)
 ```
 
 ### sudo
@@ -109,7 +108,6 @@ root@server-01  bash
 uid:        0
 gid:        0
 groups:     root
-shell:      bash
 pid:        24902
 ppid:       24890
 tty:        pts/0
@@ -118,7 +116,7 @@ sudo:       yes
 ssh:        yes
 network:    10.0.0.5
 
-context:    rust (rustc 1.94.0)
+context:    rust (1.94.0)
 ```
 
 ### 精简模式
@@ -150,6 +148,7 @@ me -n
 me --plain
 me --format config
 me --watch
+me --compact --fast
 me --full
 ```
 
@@ -202,11 +201,12 @@ me --json
 - Docker/容器环境
 - Rust 项目（通过 `Cargo.toml`）
 - Node 项目（通过 `package.json`）
+- 当前目录位于 Git 工作区时的 Git 分支
 
 上下文作为辅助信号展示:
 
 ```txt
-context:    rust (rustc 1.94.0)
+context:    rust (1.94.0) · git(main)
 ```
 
 默认命令保持本地优先。它不会查询云端身份、检查远程服务或执行公网 IP 查询。
@@ -216,16 +216,16 @@ context:    rust (rustc 1.94.0)
 ### zsh
 
 ```zsh
-PROMPT='$(me --compact) %~ %# '
+PROMPT='$(me --compact --fast) %~ %# '
 ```
 
 ### bash
 
 ```bash
-PS1='$(me --compact) \w \$ '
+PS1='$(me --compact --fast) \w \$ '
 ```
 
-提示命令会频繁执行。如果你的提示符感觉变慢了，请将 `me --compact` 移出热路径，或在 shell 配置中缓存其输出。
+提示命令会频繁执行。`--fast` 会保留默认 network 摘要，但跳过较慢的上下文版本检测。如果你的提示符仍然感觉变慢，请将 `me --compact` 移出热路径，或在 shell 配置中缓存其输出。
 
 ## 配置
 
@@ -248,6 +248,7 @@ context:
   project: true
   container: true
   ssh: true
+  git: true
 ```
 
 优先级: CLI 参数 > 环境变量 > 配置文件 > 默认值。
@@ -264,7 +265,7 @@ context:
 
 ## 发布
 
-当前版本为 `v0.1.2`。版本号遵循语义化版本规范。
+当前版本为 `v0.2.0`。版本号遵循语义化版本规范。
 
 构建本地发布产物:
 
@@ -279,18 +280,18 @@ Linux ARM64 交叉编译在主机不是 Linux ARM64 时使用 `cross`。Windows 
 创建发布标签:
 
 ```bash
-git tag -a v0.1.2 -m "Release v0.1.2"
-git push origin v0.1.2
+git tag -a v0.2.0 -m "Release v0.2.0"
+git push origin v0.2.0
 ```
 
 GitHub Actions 发布工作流会构建并上传:
 
-- `me-v0.1.2-macos-arm64.tar.gz`
-- `me-v0.1.2-macos-x64.tar.gz`
-- `me-v0.1.2-linux-x64.tar.gz`
-- `me-v0.1.2-linux-arm64.tar.gz`
-- `me-v0.1.2-windows-x64.zip`
-- `me-v0.1.2-windows-arm64.zip`
+- `me-v0.2.0-macos-arm64.tar.gz`
+- `me-v0.2.0-macos-x64.tar.gz`
+- `me-v0.2.0-linux-x64.tar.gz`
+- `me-v0.2.0-linux-arm64.tar.gz`
+- `me-v0.2.0-windows-x64.zip`
+- `me-v0.2.0-windows-arm64.zip`
 
 完整的发布清单请参见 `RELEASE_CHECKLIST.md`。
 
@@ -299,8 +300,8 @@ GitHub Actions 发布工作流会构建并上传:
 - 改进默认块状输出，消除小重复，保持身份摘要的主体地位。
 - 优化 `--compact` 用于提示符场景，保持输出在常见 shell 环境中的稳定性。
 - 改善本地、SSH、容器和非交互会话之间的输出一致性。
-- 优化提示符场景的启动时间，为频繁调用添加更轻量的快速路径。
-- 改进现有项目检测，在安静且有用的地方添加轻量级 Git 分支上下文。
+- 继续优化提示符场景的启动时间，并保持快速路径行为可预期。
+- 在保持安静和有用的前提下，改进现有项目和 Git 分支检测。
 - 改进轻量级容器检测，不将 `me` 变成通用系统检测工具。
 - 保持发布二进制文件、Homebrew 分发和安装脚本在各平台上的一致性。
 - 扩展快照覆盖率以保证输出稳定性，保持 CLI 帮助和使用示例简洁。
