@@ -174,7 +174,7 @@ fn context_summary(info: &MeInfo) -> Option<String> {
     let mut project_parts = Vec::new();
     if let Some(project) = &info.context.project {
         project_parts.push(match &project.version {
-            Some(version) => format!("{} ({version})", project.kind),
+            Some(version) => format!("{} {version}", project.kind),
             None => project.kind.clone(),
         });
     }

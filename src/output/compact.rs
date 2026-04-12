@@ -60,7 +60,10 @@ fn compact_env(info: &MeInfo) -> String {
 fn compact_project(info: &MeInfo) -> Option<String> {
     let mut parts = Vec::new();
     if let Some(project) = &info.context.project {
-        parts.push(project.kind.clone());
+        parts.push(match &project.version {
+            Some(version) => format!("{} {version}", project.kind),
+            None => project.kind.clone(),
+        });
     }
     if let Some(git) = &info.context.git {
         parts.push(format!("git:{}", git.branch));

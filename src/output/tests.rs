@@ -221,7 +221,7 @@ fn context_uses_soft_label_not_decorative_rule() {
         &Field::defaults(),
         &RenderOptions::plain_for_tests(),
     );
-    assert!(rendered.contains("\ncontext:    docker, rust (1.0) · git(main)\n"));
+    assert!(rendered.contains("\ncontext:    docker, rust 1.0 · git(main)\n"));
     assert!(!rendered.contains("--- context ---"));
     assert!(!rendered.contains("\ncontext\n\n"));
 }
@@ -299,7 +299,7 @@ fn compact_limits_context_tags() {
     let mut info = sample_info();
     info.ssh = true;
     let rendered = render_compact(&info, &Field::defaults());
-    assert!(rendered.contains(" · ssh · rust git:main · me"));
+    assert!(rendered.contains(" · ssh · rust 1.0 git:main · me"));
     assert!(!rendered.contains("docker"));
     assert!(!rendered.contains("zsh"));
 }
@@ -312,7 +312,7 @@ fn compact_uses_detected_container_kind() {
         id: None,
     });
     let rendered = render_compact(&info, &Field::defaults());
-    assert!(rendered.contains(" · container · rust git:main · me"));
+    assert!(rendered.contains(" · container · rust 1.0 git:main · me"));
     assert!(!rendered.contains(" · docker · "));
 }
 
@@ -361,7 +361,7 @@ fn json_output_matches_golden_snapshot() {
 fn block_shows_both_project_and_git() {
     let info = sample_info();
     let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
-    assert!(rendered.contains("rust (1.0) · git(main)"));
+    assert!(rendered.contains("rust 1.0 · git(main)"));
 }
 
 #[test]
@@ -369,7 +369,7 @@ fn block_shows_project_only_when_no_git() {
     let mut info = sample_info();
     info.context.git = None;
     let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
-    assert!(rendered.contains("rust (1.0)"));
+    assert!(rendered.contains("rust 1.0"));
     assert!(!rendered.contains("git("));
 }
 
@@ -386,7 +386,7 @@ fn block_shows_git_only_when_no_project() {
 fn compact_shows_both_project_and_git() {
     let info = sample_info();
     let rendered = render_compact(&info, &Field::defaults());
-    assert!(rendered.contains("rust git:main · me"));
+    assert!(rendered.contains("rust 1.0 git:main · me"));
 }
 
 #[test]
@@ -394,8 +394,31 @@ fn compact_shows_project_only_when_no_git() {
     let mut info = sample_info();
     info.context.git = None;
     let rendered = render_compact(&info, &Field::defaults());
-    assert!(rendered.contains(" · rust · me\n"));
+    assert!(rendered.contains(" · rust 1.0 · me\n"));
     assert!(!rendered.contains("git:"));
+}
+
+#[test]
+fn node_version_display_is_plain_across_outputs() {
+    let mut info = sample_info();
+    info.context.project = Some(ProjectContext {
+        kind: "node".into(),
+        version: Some("20.19.6".into()),
+    });
+    info.context.git = Some(GitContext {
+        branch: "v2.2.4".into(),
+    });
+
+    let block = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
+    let compact = render_compact(&info, &Field::defaults());
+    let config = render_config(&info, &[Field::Context], &RenderOptions::plain_for_tests());
+    let json = render_json(&info, &[Field::Context]).unwrap();
+
+    assert!(block.contains("context:    docker, node 20.19.6 · git(v2.2.4)"));
+    assert!(!block.contains("node (v20.19.6)"));
+    assert!(compact.contains("node 20.19.6 git:v2.2.4"));
+    assert!(config.contains("context = docker:abcdef123456, node 20.19.6, git:v2.2.4"));
+    assert!(json.contains("\"version\": \"20.19.6\""));
 }
 
 #[test]

@@ -16,7 +16,7 @@ pub fn detect_fast() -> Option<GitContext> {
 fn detect_from(start: &Path) -> Option<GitContext> {
     let git_dir = find_git_dir(start)?;
     let head = std::fs::read_to_string(git_dir.join("HEAD")).ok()?;
-    let branch = head_name(&git_dir, head.trim())?;
+    let branch = resolved_ref(&git_dir, head.trim())?;
     Some(GitContext { branch })
 }
 
@@ -27,7 +27,7 @@ fn detect_fast_from(start: &Path) -> Option<GitContext> {
     Some(GitContext { branch })
 }
 
-fn head_name(git_dir: &Path, head: &str) -> Option<String> {
+fn resolved_ref(git_dir: &Path, head: &str) -> Option<String> {
     if let Some(branch) = head
         .strip_prefix("ref: refs/heads/")
         .map(str::to_owned)
@@ -36,11 +36,15 @@ fn head_name(git_dir: &Path, head: &str) -> Option<String> {
         return Some(branch);
     }
 
+    if let Some(reference) = head.strip_prefix("ref: ") {
+        return reference_name(reference);
+    }
+
     if !head.chars().all(|c| c.is_ascii_hexdigit()) || head.len() < 7 {
         return None;
     }
 
-    tag_for_oid(git_dir, head).or_else(|| Some(head[..12.min(head.len())].to_owned()))
+    tag_for_oid(git_dir, head)
 }
 
 fn head_name_fast(head: &str) -> Option<String> {
@@ -62,6 +66,17 @@ fn head_name_fast(head: &str) -> Option<String> {
 fn tag_for_oid(git_dir: &Path, oid: &str) -> Option<String> {
     loose_tag_for_oid(&git_dir.join("refs/tags"), oid)
         .or_else(|| packed_tag_for_oid(&git_dir.join("packed-refs"), oid))
+}
+
+fn reference_name(reference: &str) -> Option<String> {
+    for prefix in ["refs/tags/", "refs/remotes/", "refs/"] {
+        if let Some(name) = reference.strip_prefix(prefix)
+            && !name.is_empty()
+        {
+            return Some(name.to_owned());
+        }
+    }
+    (!reference.is_empty()).then(|| reference.to_owned())
 }
 
 fn loose_tag_for_oid(tags_dir: &Path, oid: &str) -> Option<String> {
@@ -202,6 +217,48 @@ mod tests {
         let detected = detect_from(temp.path()).unwrap();
 
         assert_eq!(detected.branch, "n8n@2.2.4");
+    }
+
+    #[test]
+    fn prefers_branch_over_other_refs() {
+        let temp = tempdir().unwrap();
+        let git = temp.path().join(".git");
+        fs::create_dir_all(git.join("refs/heads")).unwrap();
+        fs::create_dir_all(git.join("refs/tags")).unwrap();
+        fs::write(git.join("HEAD"), "ref: refs/heads/main\n").unwrap();
+        fs::write(git.join("refs/heads/main"), "deadbeef\n").unwrap();
+        fs::write(git.join("refs/tags/v2.2.4"), "deadbeef\n").unwrap();
+
+        let detected = detect_from(temp.path()).unwrap();
+
+        assert_eq!(detected.branch, "main");
+    }
+
+    #[test]
+    fn falls_back_to_symbolic_ref_when_branch_is_unavailable() {
+        let temp = tempdir().unwrap();
+        let git = temp.path().join(".git");
+        fs::create_dir_all(git.join("refs/tags")).unwrap();
+        fs::write(git.join("HEAD"), "ref: refs/tags/v2.2.4\n").unwrap();
+        fs::write(git.join("refs/tags/v2.2.4"), "deadbeef\n").unwrap();
+
+        let detected = detect_from(temp.path()).unwrap();
+
+        assert_eq!(detected.branch, "v2.2.4");
+    }
+
+    #[test]
+    fn omits_git_context_when_no_branch_or_ref_exists() {
+        let temp = tempdir().unwrap();
+        let git = temp.path().join(".git");
+        fs::create_dir_all(&git).unwrap();
+        fs::write(
+            git.join("HEAD"),
+            "1234567890abcdef1234567890abcdef12345678\n",
+        )
+        .unwrap();
+
+        assert!(detect_from(temp.path()).is_none());
     }
 
     #[test]

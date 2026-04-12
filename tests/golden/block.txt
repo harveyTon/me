@@ -13,4 +13,4 @@ network:    192.168.1.10 (+2)
 
 pwd:        /Users/tiger/dev/me
 
-context:    docker, rust (1.0) · git(main)
+context:    docker, rust 1.0 · git(main)
