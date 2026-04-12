@@ -248,19 +248,17 @@ The default command stays local-first. It does not query cloud identity, inspect
 
 ## Shell Integration
 
-### zsh
-
-```zsh
-PROMPT='$(me --compact --fast) %~ %# '
-```
-
-### bash
+Set up `me` in your shell:
 
 ```bash
-PS1='$(me --compact --fast) \w \$ '
+me install
 ```
 
-Prompt commands run often. `--fast` keeps the default network summary but skips slower context version checks. If your prompt still feels slow, keep `me --compact` out of the hot path or cache its output in your shell configuration.
+Remove it later:
+
+```bash
+me uninstall
+```
 
 ## Configuration
 

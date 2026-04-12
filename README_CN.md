@@ -99,4 +99,18 @@ JSON：
 me --json
 ```
 
+## Shell 集成
+
+把 `me` 接入当前 shell：
+
+```bash
+me install
+```
+
+之后也可以移除：
+
+```bash
+me uninstall
+```
+
 一个很小的工具，但在日常 shell 工作里会意外地好用。

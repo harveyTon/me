@@ -1,5 +1,6 @@
 use crate::model::Field;
-use clap::{Parser, ValueEnum};
+use clap::{Parser, Subcommand, ValueEnum};
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Parser)]
 #[command(
@@ -10,6 +11,8 @@ use clap::{Parser, ValueEnum};
     help_template = "{about}\n\nUsage:\n  {usage}\n\n{all-args}\nExamples:\n  me\n  me --compact\n  me --json\n  me -u -h -n\n"
 )]
 pub struct Cli {
+    #[command(subcommand)]
+    pub command: Option<Command>,
     #[arg(long = "help", action = clap::ArgAction::Help, help = "Print help", help_heading = "General")]
     pub help: Option<bool>,
     #[arg(long, help = "Use compact one-line output", help_heading = "Output")]
@@ -73,6 +76,66 @@ pub struct Cli {
     pub ids: bool,
     #[arg(short = 'n', help = "Select network", help_heading = "Fields")]
     pub network: bool,
+}
+
+#[derive(Debug, Clone, Subcommand)]
+pub enum Command {
+    #[command(about = "Install shell integration")]
+    Install(InstallArgs),
+    #[command(about = "Remove shell integration")]
+    Uninstall(UninstallArgs),
+}
+
+#[derive(Debug, Clone, clap::Args)]
+pub struct InstallArgs {
+    #[arg(long = "help", action = clap::ArgAction::Help, help = "Print help")]
+    pub help: Option<bool>,
+    #[arg(long, help = "Run without interactive prompts")]
+    pub non_interactive: bool,
+    #[arg(long, value_enum, help = "Select login shell behavior")]
+    pub login: Option<LoginMode>,
+    #[arg(long, value_enum, help = "Select interactive shell behavior")]
+    pub interactive: Option<InteractiveMode>,
+    #[arg(long, value_enum, help = "Override shell detection")]
+    pub shell: Option<Shell>,
+    #[arg(long, value_name = "PATH", help = "Override target shell config file")]
+    pub file: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, clap::Args)]
+pub struct UninstallArgs {
+    #[arg(long = "help", action = clap::ArgAction::Help, help = "Print help")]
+    pub help: Option<bool>,
+    #[arg(long, help = "Run without interactive prompts")]
+    pub non_interactive: bool,
+    #[arg(long, help = "Confirm global uninstall without prompting")]
+    pub yes: bool,
+    #[arg(long, value_enum, help = "Override shell detection")]
+    pub shell: Option<Shell>,
+    #[arg(long, value_name = "PATH", help = "Override target shell config file")]
+    pub file: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum LoginMode {
+    None,
+    Full,
+    Compact,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum InteractiveMode {
+    None,
+    Compact,
+    Prompt,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ValueEnum)]
+pub enum Shell {
+    Zsh,
+    Bash,
+    Fish,
+    Nushell,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]

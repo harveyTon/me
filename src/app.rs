@@ -19,6 +19,10 @@ pub enum AppMode {
 
 pub fn run() -> anyhow::Result<()> {
     let cli = Cli::parse_args();
+    if let Some(command) = cli.command.clone() {
+        return crate::shell_integration::run(command);
+    }
+
     let (config, config_warning) = Config::load();
     if let Some(warning) = config_warning {
         eprintln!("me: {warning}");

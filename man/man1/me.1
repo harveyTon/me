@@ -4,6 +4,12 @@ me \- a modern, context-aware replacement for whoami
 .SH SYNOPSIS
 .B me
 [\fIOPTIONS\fR]
+.br
+.B me install
+[\fIOPTIONS\fR]
+.br
+.B me uninstall
+[\fIOPTIONS\fR]
 .SH DESCRIPTION
 .B me
 prints local identity and session context in a compact, human-readable form.
@@ -83,6 +89,71 @@ Select network.
 .TP
 .B \-V, \-\-version
 Print version.
+.SH COMMANDS
+.TP
+.B install
+Install shell integration for login or interactive shell startup.
+.TP
+.B uninstall
+Remove managed shell integration blocks previously installed by
+.BR "me install" .
+.SH INSTALL OPTIONS
+.TP
+.B \-\-non-interactive
+Run install without prompts.
+.TP
+.B \-\-login \fIMODE\fR
+Select login shell behavior. Supported values are
+.B none
+,
+.B full
+,
+and
+.BR compact .
+.TP
+.B \-\-interactive \fIMODE\fR
+Select interactive shell behavior. Supported values are
+.B none
+,
+.B compact
+,
+and
+.BR prompt .
+.TP
+.B \-\-shell \fISHELL\fR
+Override shell detection. Supported values are
+.B zsh
+,
+.B bash
+,
+.B fish
+,
+and
+.BR nushell .
+.TP
+.B \-\-file \fIPATH\fR
+Override the target shell config file.
+.SH UNINSTALL OPTIONS
+.TP
+.B \-\-non-interactive
+Run uninstall without prompts.
+.TP
+.B \-\-yes
+Confirm global non-interactive uninstall.
+.TP
+.B \-\-shell \fISHELL\fR
+Override shell detection. Supported values are
+.B zsh
+,
+.B bash
+,
+.B fish
+,
+and
+.BR nushell .
+.TP
+.B \-\-file \fIPATH\fR
+Override the target shell config file.
 .SH EXAMPLES
 .TP
 .B me
@@ -99,6 +170,12 @@ Show only user, host, and network fields.
 .TP
 .B me \-\-watch \-\-interval 2
 Refresh output every two seconds.
+.TP
+.B me install
+Start the interactive shell integration setup.
+.TP
+.B me uninstall
+Start the interactive shell integration removal flow.
 .SH CONTEXT
 .B me
 detects a small set of local context signals: SSH sessions, Docker/container

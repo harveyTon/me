@@ -1,5 +1,16 @@
 # Release Notes
 
+## v0.3.1
+
+Shell integration polish for `me install` and `me uninstall`.
+
+### Highlights
+
+- Added safe non-interactive uninstall support with `--file` or explicit `--yes` for global removal.
+- Improved install and uninstall summaries so affected modes and files are easier to scan.
+- Refined interactive install wording for login and interactive shell choices.
+- Updated README and man page documentation for shell integration commands.
+
 ## v0.3.0
 
 Expanded project context detection for `me`, a better `whoami` for your shell.

@@ -3,6 +3,7 @@ use predicates::prelude::*;
 use std::{
     fs,
     io::{BufRead, BufReader},
+    path::Path,
     process::Stdio,
     thread,
     time::{Duration, Instant},
@@ -39,7 +40,31 @@ fn man_page_documents_core_usage() {
     assert!(man_page.contains(".TH ME 1"));
     assert!(man_page.contains("\\-\\-compact"));
     assert!(man_page.contains("\\-\\-json"));
+    assert!(man_page.contains("me install"));
+    assert!(man_page.contains("me uninstall"));
+    assert!(man_page.contains("\\-\\-yes"));
     assert!(man_page.contains("-h"));
+}
+
+#[test]
+fn shell_integration_help_keeps_install_and_uninstall_flags_separate() {
+    Command::cargo_bin("me")
+        .unwrap()
+        .args(["install", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--login"))
+        .stdout(predicate::str::contains("--interactive"))
+        .stdout(predicate::str::contains("--yes").not());
+
+    Command::cargo_bin("me")
+        .unwrap()
+        .args(["uninstall", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--yes"))
+        .stdout(predicate::str::contains("--login").not())
+        .stdout(predicate::str::contains("--interactive").not());
 }
 
 #[test]
@@ -257,6 +282,302 @@ fn watch_json_exits_cleanly_when_pipe_closes() {
         }
         thread::sleep(Duration::from_millis(50));
     }
+}
+
+#[test]
+fn install_non_interactive_writes_managed_block() {
+    let dir = tempdir().unwrap();
+    let target = dir.path().join(".zshrc");
+
+    Command::cargo_bin("me")
+        .unwrap()
+        .args([
+            "install",
+            "--non-interactive",
+            "--shell",
+            "zsh",
+            "--login",
+            "full",
+            "--interactive",
+            "compact",
+            "--file",
+            target.to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("installed"))
+        .stdout(predicate::str::contains(target.display().to_string()))
+        .stdout(predicate::str::contains(
+            "Installed me shell integration for zsh",
+        ))
+        .stdout(predicate::str::contains(format!(
+            "- login: full ({})",
+            target.display()
+        )))
+        .stdout(predicate::str::contains(format!(
+            "- interactive: compact ({})",
+            target.display()
+        )))
+        .stdout(predicate::str::contains(
+            "Restart or reopen your shell to start using it.",
+        ));
+
+    let contents = fs::read_to_string(&target).unwrap();
+    assert_eq!(contents.matches("# >>> me install >>>").count(), 1);
+    assert!(
+        contents.contains("# me-managed: shell=zsh login=full interactive=compact version=v0.3.1")
+    );
+    assert!(contents.contains("me\n"));
+    assert!(contents.contains("me --compact"));
+}
+
+#[test]
+fn reinstall_replaces_existing_managed_block_without_duplication() {
+    let dir = tempdir().unwrap();
+    let target = dir.path().join(".zshrc");
+
+    run_install(&target, "compact");
+    run_install(&target, "none");
+
+    let contents = fs::read_to_string(&target).unwrap();
+    assert_eq!(contents.matches("# >>> me install >>>").count(), 1);
+    assert!(contents.contains("# me-managed: shell=zsh login=full interactive=none"));
+    assert!(!contents.contains("interactive=compact"));
+}
+
+#[test]
+fn uninstall_non_interactive_removes_only_managed_block_from_file() {
+    let dir = tempdir().unwrap();
+    let target = dir.path().join(".zshrc");
+    fs::write(&target, "before\n").unwrap();
+    run_install(&target, "compact");
+    fs::write(
+        &target,
+        format!("{}\nafter\n", fs::read_to_string(&target).unwrap()),
+    )
+    .unwrap();
+
+    Command::cargo_bin("me")
+        .unwrap()
+        .args([
+            "uninstall",
+            "--non-interactive",
+            "--file",
+            target.to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("removed"))
+        .stdout(predicate::str::contains(
+            "Removed me shell integration from 1 file(s).",
+        ))
+        .stdout(predicate::str::contains(
+            "Restart or reopen your shell to finish uninstalling.",
+        ));
+
+    let contents = fs::read_to_string(&target).unwrap();
+    assert!(contents.contains("before"));
+    assert!(contents.contains("after"));
+    assert!(!contents.contains("# >>> me install >>>"));
+    assert!(!contents.contains("# me-managed:"));
+}
+
+#[test]
+fn uninstall_non_interactive_global_requires_yes() {
+    let home = tempdir().unwrap();
+    let zshrc = home.path().join(".zshrc");
+    fs::write(
+        &zshrc,
+        "# >>> me install >>>\n# me-managed: shell=zsh login=none interactive=compact version=v0.3.1\nme --compact\n# <<< me install <<<\n",
+    )
+    .unwrap();
+
+    Command::cargo_bin("me")
+        .unwrap()
+        .args(["uninstall", "--non-interactive"])
+        .env("HOME", home.path())
+        .env("XDG_CONFIG_HOME", home.path().join(".config"))
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("--yes"));
+
+    assert!(
+        fs::read_to_string(&zshrc)
+            .unwrap()
+            .contains("# >>> me install >>>")
+    );
+}
+
+#[test]
+fn uninstall_non_interactive_yes_removes_all_managed_blocks() {
+    let home = tempdir().unwrap();
+    let zshrc = home.path().join(".zshrc");
+    let bashrc = home.path().join(".bashrc");
+    fs::write(
+        &zshrc,
+        "# >>> me install >>>\n# me-managed: shell=zsh login=none interactive=compact version=v0.3.1\nme --compact\n# <<< me install <<<\n",
+    )
+    .unwrap();
+    fs::write(
+        &bashrc,
+        "# >>> me install >>>\n# me-managed: shell=bash login=none interactive=compact version=v0.3.1\nme --compact\n# <<< me install <<<\n",
+    )
+    .unwrap();
+
+    Command::cargo_bin("me")
+        .unwrap()
+        .args(["uninstall", "--non-interactive", "--yes"])
+        .env("HOME", home.path())
+        .env("XDG_CONFIG_HOME", home.path().join(".config"))
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "Removed me shell integration from 2 file(s).",
+        ));
+
+    assert!(
+        !fs::read_to_string(&zshrc)
+            .unwrap()
+            .contains("# >>> me install >>>")
+    );
+    assert!(
+        !fs::read_to_string(&bashrc)
+            .unwrap()
+            .contains("# >>> me install >>>")
+    );
+}
+
+#[test]
+fn install_interactive_uses_natural_prompt_wording() {
+    let dir = tempdir().unwrap();
+    let target = dir.path().join(".zshrc");
+
+    Command::cargo_bin("me")
+        .unwrap()
+        .args([
+            "install",
+            "--shell",
+            "zsh",
+            "--file",
+            target.to_str().unwrap(),
+        ])
+        .write_stdin("3\n3\n")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "How should me run in login shells?",
+        ))
+        .stdout(predicate::str::contains(
+            "How should me run in interactive shells?",
+        ));
+}
+
+#[test]
+fn uninstall_does_not_remove_partial_or_unmanaged_me_snippets() {
+    let dir = tempdir().unwrap();
+    let target = dir.path().join(".zshrc");
+    fs::write(
+        &target,
+        "# me-managed: shell=zsh login=full interactive=compact version=v0.3.1\nme --compact\n",
+    )
+    .unwrap();
+
+    Command::cargo_bin("me")
+        .unwrap()
+        .args([
+            "uninstall",
+            "--non-interactive",
+            "--file",
+            target.to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("manual cleanup"));
+
+    let contents = fs::read_to_string(&target).unwrap();
+    assert!(contents.contains("# me-managed:"));
+    assert!(contents.contains("me --compact"));
+}
+
+#[test]
+fn install_non_interactive_refuses_prompt_when_prompt_looks_complex() {
+    let dir = tempdir().unwrap();
+    let target = dir.path().join(".zshrc");
+    fs::write(&target, "eval \"$(starship init zsh)\"\n").unwrap();
+
+    Command::cargo_bin("me")
+        .unwrap()
+        .args([
+            "install",
+            "--non-interactive",
+            "--shell",
+            "zsh",
+            "--login",
+            "none",
+            "--interactive",
+            "prompt",
+            "--file",
+            target.to_str().unwrap(),
+        ])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("prompt integration looks unsafe"));
+
+    let contents = fs::read_to_string(&target).unwrap();
+    assert!(!contents.contains("# >>> me install >>>"));
+}
+
+#[test]
+fn install_non_interactive_warns_about_other_shell_integrations() {
+    let home = tempdir().unwrap();
+    let zprofile = home.path().join(".zprofile");
+    let bashrc = home.path().join(".bashrc");
+    fs::write(
+        &bashrc,
+        "# >>> me install >>>\n# me-managed: shell=bash login=full interactive=none version=v0.3.1\nme\n# <<< me install <<<\n",
+    )
+    .unwrap();
+
+    Command::cargo_bin("me")
+        .unwrap()
+        .args([
+            "install",
+            "--non-interactive",
+            "--shell",
+            "zsh",
+            "--login",
+            "full",
+            "--interactive",
+            "none",
+        ])
+        .env("HOME", home.path())
+        .env("XDG_CONFIG_HOME", home.path().join(".config"))
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("existing me integration"))
+        .stdout(predicate::str::contains("~/.zprofile"));
+
+    assert!(fs::read_to_string(&bashrc).unwrap().contains("shell=bash"));
+    assert!(fs::read_to_string(&zprofile).unwrap().contains("shell=zsh"));
+}
+
+fn run_install(target: &Path, interactive: &str) {
+    Command::cargo_bin("me")
+        .unwrap()
+        .args([
+            "install",
+            "--non-interactive",
+            "--shell",
+            "zsh",
+            "--login",
+            "full",
+            "--interactive",
+            interactive,
+            "--file",
+            target.to_str().unwrap(),
+        ])
+        .assert()
+        .success();
 }
 
 #[test]
