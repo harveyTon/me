@@ -60,8 +60,8 @@ fn install(args: InstallArgs) -> anyhow::Result<()> {
         .context("could not detect shell; pass --shell <zsh|bash|fish|nushell>")?;
     let login = choose_login_mode(&args)?;
     let interactive = choose_interactive_mode(&args)?;
-    let home = dirs::home_dir().context("could not determine home directory")?;
-    let config_dir = dirs::config_dir().unwrap_or_else(|| home.join(".config"));
+    let home = shell_home_dir().context("could not determine home directory")?;
+    let config_dir = shell_config_dir(&home);
     let existing = scan_known_integrations(&home, &config_dir)?;
     let other_shells = existing_for_other_shells(&existing, shell);
 
@@ -168,8 +168,8 @@ fn install(args: InstallArgs) -> anyhow::Result<()> {
 }
 
 fn uninstall(args: UninstallArgs) -> anyhow::Result<()> {
-    let home = dirs::home_dir().context("could not determine home directory")?;
-    let config_dir = dirs::config_dir().unwrap_or_else(|| home.join(".config"));
+    let home = shell_home_dir().context("could not determine home directory")?;
+    let config_dir = shell_config_dir(&home);
     let integrations = if let Some(file) = &args.file {
         scan_paths(std::slice::from_ref(file))?
     } else if args.non_interactive && !args.yes {
@@ -692,6 +692,25 @@ fn detect_current_shell() -> Option<Shell> {
     Shell::from_name(&name)
 }
 
+fn shell_home_dir() -> Option<PathBuf> {
+    env_path("HOME").or_else(dirs::home_dir)
+}
+
+fn shell_config_dir(home: &Path) -> PathBuf {
+    env_path("XDG_CONFIG_HOME")
+        .or_else(dirs::config_dir)
+        .unwrap_or_else(|| home.join(".config"))
+}
+
+fn env_path(key: &str) -> Option<PathBuf> {
+    let value = env::var_os(key)?;
+    if value.is_empty() {
+        None
+    } else {
+        Some(PathBuf::from(value))
+    }
+}
+
 fn read_optional(path: &Path) -> anyhow::Result<String> {
     match fs::read_to_string(path) {
         Ok(contents) => Ok(contents),
@@ -712,7 +731,7 @@ fn write_file(path: &Path, contents: &str) -> anyhow::Result<()> {
 }
 
 fn display_path(path: &Path) -> String {
-    if let Some(home) = dirs::home_dir()
+    if let Some(home) = shell_home_dir()
         && let Ok(stripped) = path.strip_prefix(&home)
     {
         return format!("~/{}", stripped.display());
