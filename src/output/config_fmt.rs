@@ -2,7 +2,7 @@ use crate::{
     model::{Field, MeInfo},
     output::{
         RenderOptions,
-        semantics::{ContextTextStyle, compact_list, context_text, display_host},
+        semantics::{ContextTextStyle, compact_list, context_text, display_host, network_summary},
     },
 };
 
@@ -30,7 +30,7 @@ pub(crate) fn value_for(info: &MeInfo, field: Field) -> Option<String> {
         Field::Privilege => Some(info.privilege.clone()),
         Field::Sudo => Some(if info.sudo { "yes" } else { "no" }.into()),
         Field::Ssh => Some(if info.ssh { "yes" } else { "no" }.into()),
-        Field::Network => compact_list(&info.network.local_ips, 1),
+        Field::Network => network_summary(&info.network, 1),
         Field::Pwd => info.pwd.as_ref().map(|pwd| pwd.display.clone()),
         Field::Context => context_text(info, ContextTextStyle::Config),
     }

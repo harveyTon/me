@@ -363,14 +363,19 @@ mod tests {
                 .collect::<String>()
         );
         let previous = std::env::var_os(&key);
+        // SAFETY: tests in this module serialize environment mutation through
+        // their local execution path and restore the previous value immediately.
         unsafe {
             std::env::set_var(&key, value);
         }
         let result = run();
         match previous {
+            // SAFETY: restoring the prior process-global environment value is
+            // safe under the same serialized test conditions above.
             Some(previous) => unsafe {
                 std::env::set_var(&key, previous);
             },
+            // SAFETY: removing the temporary test variable is safe for the same reason.
             None => unsafe {
                 std::env::remove_var(&key);
             },

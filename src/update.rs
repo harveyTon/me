@@ -1,8 +1,9 @@
 use crate::cli::UpdateArgs;
 use anyhow::{Context, bail};
+use sha2::{Digest, Sha256};
 use std::{
     env, fs,
-    io::{self, Write},
+    io::{self, Read, Write},
     path::{Path, PathBuf},
     process::Command,
 };
@@ -248,7 +249,11 @@ fn update_release_binary(path: &Path, latest: &str) -> anyhow::Result<()> {
     })?;
 
     let candidate = if let Ok(artifact) = env::var("ME_UPDATE_RELEASE_ARTIFACT") {
-        PathBuf::from(artifact)
+        let artifact = PathBuf::from(artifact);
+        if let Some(manifest) = checksum_manifest_override()? {
+            verify_checksum_manifest(&artifact, &manifest)?;
+        }
+        artifact
     } else {
         download_release_binary(&temp_dir, latest)?
     };
@@ -263,6 +268,7 @@ fn download_release_binary(temp_dir: &Path, latest: &str) -> anyhow::Result<Path
     let tag = format!("v{latest}");
     let artifact = artifact_name(&tag).context("no release artifact for this platform")?;
     let archive = temp_dir.join(&artifact);
+    let checksum_manifest = download_checksum_manifest(temp_dir, &tag)?;
     let url = format!("https://github.com/{OWNER}/{REPO}/releases/download/{tag}/{artifact}");
     run_command(
         "curl",
@@ -275,6 +281,7 @@ fn download_release_binary(temp_dir: &Path, latest: &str) -> anyhow::Result<Path
             &url,
         ],
     )?;
+    verify_checksum_manifest(&archive, &checksum_manifest)?;
 
     if artifact.ends_with(".zip") {
         extract_zip(&archive, temp_dir)?;
@@ -295,6 +302,32 @@ fn download_release_binary(temp_dir: &Path, latest: &str) -> anyhow::Result<Path
     }
 
     find_binary(temp_dir).context("release archive did not contain a me binary")
+}
+
+fn checksum_manifest_override() -> anyhow::Result<Option<String>> {
+    if let Ok(path) = env::var("ME_UPDATE_RELEASE_CHECKSUM_FILE") {
+        return fs::read_to_string(&path)
+            .map(Some)
+            .with_context(|| format!("failed to read checksum manifest {path}"));
+    }
+    Ok(env::var("ME_UPDATE_RELEASE_CHECKSUMS").ok())
+}
+
+fn download_checksum_manifest(temp_dir: &Path, tag: &str) -> anyhow::Result<String> {
+    let path = temp_dir.join("SHA256SUMS.txt");
+    let url = format!("https://github.com/{OWNER}/{REPO}/releases/download/{tag}/SHA256SUMS.txt");
+    run_command(
+        "curl",
+        &[
+            "-fsSL",
+            "-o",
+            path.to_str()
+                .context("temporary checksum path is not valid UTF-8")?,
+            &url,
+        ],
+    )?;
+    fs::read_to_string(&path)
+        .with_context(|| format!("failed to read checksum manifest {}", path.display()))
 }
 
 fn extract_zip(archive: &Path, temp_dir: &Path) -> anyhow::Result<()> {
@@ -406,6 +439,47 @@ fn run_command(program: &str, args: &[&str]) -> anyhow::Result<()> {
     }
 }
 
+fn verify_checksum_manifest(artifact: &Path, manifest: &str) -> anyhow::Result<()> {
+    let file_name = artifact
+        .file_name()
+        .and_then(|name| name.to_str())
+        .context("artifact path has no valid file name")?;
+    let expected = manifest
+        .lines()
+        .find_map(|line| {
+            let mut parts = line.split_whitespace();
+            let checksum = parts.next()?;
+            let name = parts.next()?.trim_start_matches("./");
+            (name == file_name).then_some(checksum)
+        })
+        .context("checksum manifest did not include the downloaded artifact")?;
+    let actual = sha256_hex(artifact)?;
+    if actual.eq_ignore_ascii_case(expected) {
+        Ok(())
+    } else {
+        bail!("checksum verification failed for {}", artifact.display())
+    }
+}
+
+fn sha256_hex(path: &Path) -> anyhow::Result<String> {
+    let mut file = fs::File::open(path).with_context(|| {
+        format!(
+            "failed to open {} for checksum verification",
+            path.display()
+        )
+    })?;
+    let mut hasher = Sha256::new();
+    let mut buffer = [0u8; 8192];
+    loop {
+        let read = file.read(&mut buffer)?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
 fn artifact_name(tag: &str) -> Option<String> {
     let os = env::consts::OS;
     let arch = env::consts::ARCH;
@@ -449,8 +523,9 @@ fn parse_version(version: &str) -> Vec<u64> {
 
 #[cfg(test)]
 mod tests {
-    use super::{InstallSource, detect_source_for};
-    use std::path::Path;
+    use super::{InstallSource, detect_source_for, sha256_hex, verify_checksum_manifest};
+    use std::{fs, path::Path};
+    use tempfile::tempdir;
 
     #[test]
     fn detects_macos_homebrew_from_standard_prefix_path() {
@@ -471,5 +546,30 @@ mod tests {
     fn falls_back_to_unknown_when_source_is_not_safe_to_assume() {
         let source = detect_source_for(Path::new("/tmp/me"), "macos", None);
         assert_eq!(source, InstallSource::Unknown("/tmp/me".into()));
+    }
+
+    #[test]
+    fn accepts_matching_sha256_manifest_entry() {
+        let dir = tempdir().unwrap();
+        let archive = dir.path().join("me-v0.3.3-linux-x64.tar.gz");
+        fs::write(&archive, b"release-bytes").unwrap();
+        let manifest = format!(
+            "{}  {}\n",
+            sha256_hex(&archive).unwrap(),
+            archive.file_name().unwrap().to_string_lossy()
+        );
+
+        verify_checksum_manifest(&archive, &manifest).unwrap();
+    }
+
+    #[test]
+    fn rejects_mismatched_sha256_manifest_entry() {
+        let dir = tempdir().unwrap();
+        let archive = dir.path().join("me-v0.3.3-linux-x64.tar.gz");
+        fs::write(&archive, b"release-bytes").unwrap();
+        let error = verify_checksum_manifest(&archive, "deadbeef  me-v0.3.3-linux-x64.tar.gz\n")
+            .unwrap_err();
+
+        assert!(error.to_string().contains("checksum verification failed"));
     }
 }

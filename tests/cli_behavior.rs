@@ -1,4 +1,5 @@
 use assert_cmd::Command;
+use assert_cmd::assert::OutputAssertExt;
 use predicates::prelude::*;
 use std::{
     fs,
@@ -46,6 +47,14 @@ fn man_page_documents_core_usage() {
     assert!(man_page.contains("\\-\\-yes"));
     assert!(man_page.contains("\\-\\-check"));
     assert!(man_page.contains("-h"));
+}
+
+#[test]
+fn version_consistency_script_passes() {
+    std::process::Command::new("bash")
+        .arg("scripts/check-version-consistency.sh")
+        .assert()
+        .success();
 }
 
 #[test]

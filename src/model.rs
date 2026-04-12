@@ -111,9 +111,12 @@ pub struct RuntimeInfo {
     pub tty: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct NetworkInfo {
-    pub local_ips: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub ipv4_local_ips: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub ipv6_local_ips: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

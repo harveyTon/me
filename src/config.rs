@@ -2,6 +2,8 @@ use crate::model::Field;
 use serde::Deserialize;
 use std::{env, fs, path::PathBuf};
 
+const CONFIG_SIZE_LIMIT_BYTES: u64 = 100 * 1024;
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -120,13 +122,26 @@ impl Config {
             );
         }
 
+        if fs::metadata(&path)
+            .map(|meta| meta.len() > CONFIG_SIZE_LIMIT_BYTES)
+            .unwrap_or(false)
+        {
+            return (
+                Self::default(),
+                Some(format!(
+                    "config file is too large at {}; using defaults",
+                    path.display()
+                )),
+            );
+        }
+
         match fs::read_to_string(&path) {
             Ok(raw) => match serde_yaml::from_str::<Config>(&raw) {
                 Ok(config) => (config, None),
-                Err(error) => (
+                Err(_) => (
                     Self::default(),
                     Some(format!(
-                        "warning: invalid config at {}: {error}; fix the file or remove it, using defaults",
+                        "invalid config at {}; using defaults",
                         path.display()
                     )),
                 ),
@@ -134,7 +149,7 @@ impl Config {
             Err(error) => (
                 Self::default(),
                 Some(format!(
-                    "warning: could not read config at {}: {error}; using defaults",
+                    "could not read config at {}: {error}; using defaults",
                     path.display()
                 )),
             ),
@@ -287,8 +302,24 @@ mod tests {
         let warning = warning.expect("expected invalid config warning");
         assert!(warning.contains("invalid config"));
         assert!(warning.contains(&path.display().to_string()));
+        assert!(!warning.contains("did not find expected"));
         assert_eq!(config.view, View::Block);
         assert_eq!(config.theme, "dark");
+    }
+
+    #[test]
+    fn load_falls_back_to_defaults_when_config_is_too_large() {
+        let temp = tempdir().unwrap();
+        let path = temp.path().join(".config/me/config.yaml");
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, "x".repeat(CONFIG_SIZE_LIMIT_BYTES as usize + 1)).unwrap();
+
+        let (config, warning) = Config::load_from_path(Some(path.clone()));
+
+        let warning = warning.expect("expected oversize config warning");
+        assert!(warning.contains("config file is too large"));
+        assert!(warning.contains(&path.display().to_string()));
+        assert_eq!(config.view, View::Block);
     }
 
     #[test]
@@ -306,6 +337,8 @@ mod tests {
     fn env_overrides_apply_valid_values_only() {
         let _guard = ENV_LOCK.lock().unwrap();
         let mut config = Config::default();
+        // SAFETY: these tests serialize environment access with `ENV_LOCK`, so
+        // mutating process-global environment variables here does not race.
         unsafe {
             env::set_var("ME_VIEW", "compact");
             env::set_var("ME_COLOR", "off");
@@ -316,6 +349,7 @@ mod tests {
 
         apply_env_overrides(&mut config);
 
+        // SAFETY: same reasoning as above; the test holds the environment lock.
         unsafe {
             env::remove_var("ME_VIEW");
             env::remove_var("ME_COLOR");

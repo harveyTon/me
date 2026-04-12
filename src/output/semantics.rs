@@ -1,6 +1,6 @@
 use crate::{
     context::project::project_priority,
-    model::{GitContext, MeInfo, ProjectContext},
+    model::{GitContext, MeInfo, NetworkInfo, ProjectContext},
 };
 
 const MAX_TEXT_CONTEXT_ITEMS: usize = 3;
@@ -25,6 +25,30 @@ pub fn compact_list(values: &[String], keep: usize) -> Option<String> {
     } else {
         format!("{} (+{})", values[..keep].join(", "), values.len() - keep)
     })
+}
+
+pub fn network_summary(network: &NetworkInfo, keep: usize) -> Option<String> {
+    let mut groups = Vec::new();
+    if let Some(value) = compact_list(&network.ipv4_local_ips, keep) {
+        groups.push(format!("ipv4 {value}"));
+    }
+    if let Some(value) = compact_list(&network.ipv6_local_ips, keep) {
+        groups.push(format!("ipv6 {value}"));
+    }
+    (!groups.is_empty()).then(|| groups.join(", "))
+}
+
+pub fn network_lines(network: &NetworkInfo) -> Vec<String> {
+    let mut lines = Vec::new();
+    if !network.ipv4_local_ips.is_empty() {
+        lines.push("ipv4:".to_string());
+        lines.extend(network.ipv4_local_ips.iter().map(|ip| format!("  {ip}")));
+    }
+    if !network.ipv6_local_ips.is_empty() {
+        lines.push("ipv6:".to_string());
+        lines.extend(network.ipv6_local_ips.iter().map(|ip| format!("  {ip}")));
+    }
+    lines
 }
 
 pub fn context_text(info: &MeInfo, style: ContextTextStyle) -> Option<String> {

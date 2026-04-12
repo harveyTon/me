@@ -21,9 +21,7 @@ pub fn collect(config: &crate::config::ContextConfig, fast: bool, collect_networ
         network: if collect_network {
             network::collect()
         } else {
-            crate::model::NetworkInfo {
-                local_ips: Vec::new(),
-            }
+            crate::model::NetworkInfo::default()
         },
         pwd: collect_pwd(),
         identity,

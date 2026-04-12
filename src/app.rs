@@ -86,6 +86,8 @@ fn resolve_fields(selected: Vec<Field>, config: &Config) -> Vec<Field> {
 }
 
 pub(crate) fn should_collect_network(_fast: bool, _explicit_network: bool) -> bool {
+    // Intentional: `--fast` skips slower project/context version work, but local
+    // network addresses remain part of the default identity snapshot.
     true
 }
 

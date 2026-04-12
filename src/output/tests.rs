@@ -34,11 +34,12 @@ fn sample_info() -> MeInfo {
         sudo: false,
         ssh: false,
         network: NetworkInfo {
-            local_ips: vec![
+            ipv4_local_ips: vec![
                 "192.168.1.10".into(),
                 "10.0.0.5".into(),
                 "172.16.0.3".into(),
             ],
+            ipv6_local_ips: vec!["fd12::1".into(), "fd12::2".into()],
         },
         pwd: Some(PwdInfo {
             raw: "/Users/tiger/dev/me".into(),
@@ -102,6 +103,8 @@ fn json_default_output_includes_pwd_object() {
     assert!(rendered.contains("\"pwd\""));
     assert!(rendered.contains("\"raw\": \"/Users/tiger/dev/me\""));
     assert!(rendered.contains("\"display\": \"/Users/tiger/dev/me\""));
+    assert!(rendered.contains("\"ipv4_local_ips\""));
+    assert!(rendered.contains("\"ipv6_local_ips\""));
 }
 
 #[test]
@@ -131,7 +134,7 @@ fn block_truncates_groups_and_network_by_default() {
         &RenderOptions::plain_for_tests(),
     );
     assert!(rendered.contains("groups:     staff, admin, _developer (+2)"));
-    assert!(rendered.contains("network:    192.168.1.10 (+2)"));
+    assert!(rendered.contains("network:    ipv4 192.168.1.10 (+2), ipv6 fd12::1 (+1)"));
 }
 
 #[test]
@@ -163,7 +166,7 @@ fn block_default_output_includes_pwd_before_context() {
     );
     assert!(
         rendered.contains(
-            "network:    192.168.1.10 (+2)\n\npwd:        /Users/tiger/dev/me\n\ncontext:"
+            "network:    ipv4 192.168.1.10 (+2), ipv6 fd12::1 (+1)\n\npwd:        /Users/tiger/dev/me\n\ncontext:"
         )
     );
 }
@@ -227,7 +230,9 @@ fn block_full_expands_groups_and_network() {
     options.full = true;
     let rendered = render_block(&sample_info(), &Field::defaults(), &options);
     assert!(rendered.contains("groups:\n  staff\n  admin\n  _developer\n  access_bpf\n  everyone"));
-    assert!(rendered.contains("network:\n  192.168.1.10\n  10.0.0.5\n  172.16.0.3"));
+    assert!(
+        rendered.contains("network:\n  ipv4:\n    192.168.1.10\n    10.0.0.5\n    172.16.0.3\n  ipv6:\n    fd12::1\n    fd12::2")
+    );
 }
 
 #[test]
@@ -688,7 +693,7 @@ fn network_output_remains_unchanged_with_dense_context() {
         },
     ];
     let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
-    assert!(rendered.contains("network:    192.168.1.10 (+2)"));
+    assert!(rendered.contains("network:    ipv4 192.168.1.10 (+2), ipv6 fd12::1 (+1)"));
 }
 
 #[test]

@@ -4,7 +4,10 @@ use crate::{
     output::{
         RenderOptions,
         config_fmt::value_for,
-        semantics::{ContextTextStyle, compact_list, context_text, display_host},
+        semantics::{
+            ContextTextStyle, compact_list, context_text, display_host, network_lines,
+            network_summary,
+        },
     },
 };
 use owo_colors::OwoColorize;
@@ -113,7 +116,7 @@ fn rows(
 fn row(info: &MeInfo, field: Field, options: &RenderOptions) -> Option<Row> {
     match field {
         Field::Groups if options.full => multiline_row("groups", &info.identity.groups),
-        Field::Network if options.full => multiline_row("network", &info.network.local_ips),
+        Field::Network if options.full => multiline_row("network", &network_lines(&info.network)),
         Field::Groups => Some(Row {
             key: "groups",
             value: compact_list(&info.identity.groups, 3)?,
@@ -123,11 +126,7 @@ fn row(info: &MeInfo, field: Field, options: &RenderOptions) -> Option<Row> {
         .filter(|row| !row.value.is_empty()),
         Field::Network => Some(Row {
             key: "network",
-            value: prefixed_value(
-                options,
-                "network",
-                compact_list(&info.network.local_ips, 1)?,
-            ),
+            value: prefixed_value(options, "network", network_summary(&info.network, 1)?),
             add_gap_before: false,
             add_gap_after: false,
         })

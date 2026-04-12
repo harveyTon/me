@@ -26,7 +26,9 @@ fn shell_name() -> Option<String> {
 
 #[cfg(unix)]
 fn parent_pid() -> Option<u32> {
-    Some(unsafe { libc::getppid() as u32 })
+    // SAFETY: `getppid` is a thread-safe libc query with no preconditions.
+    let pid = unsafe { libc::getppid() };
+    (pid > 0).then_some(pid as u32)
 }
 
 #[cfg(windows)]
@@ -36,10 +38,16 @@ fn parent_pid() -> Option<u32> {
 
 #[cfg(unix)]
 fn tty_name() -> Option<String> {
+    // SAFETY: `isatty` only reads the fd state for stdin and has no aliasing requirements.
+    if unsafe { libc::isatty(libc::STDIN_FILENO) } != 1 {
+        return None;
+    }
+    // SAFETY: `ttyname` returns either null or a valid NUL-terminated string owned by libc.
     let ptr = unsafe { libc::ttyname(libc::STDIN_FILENO) };
     if ptr.is_null() {
         return None;
     }
+    // SAFETY: `ptr` is non-null above and points to a valid NUL-terminated tty path.
     unsafe {
         CStr::from_ptr(ptr)
             .to_str()

@@ -70,6 +70,7 @@ fn ancestor_commands() -> Option<Vec<String>> {
     #[cfg(unix)]
     {
         let mut commands = Vec::new();
+        // SAFETY: `getppid` is a read-only libc query with no preconditions.
         let mut pid = unsafe { libc::getppid() };
 
         for _ in 0..8 {

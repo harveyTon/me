@@ -721,14 +721,93 @@ fn read_optional(path: &Path) -> anyhow::Result<String> {
 }
 
 fn write_file(path: &Path, contents: &str) -> anyhow::Result<()> {
-    if let Some(parent) = path
+    write_file_with(path, contents, &WriteOptions::default(), &mut StdFileOps)
+}
+
+#[derive(Debug, Clone, Default)]
+struct WriteOptions {
+    backup_path: Option<PathBuf>,
+}
+
+trait FileOps {
+    fn rename(&mut self, from: &Path, to: &Path) -> io::Result<()>;
+    fn copy(&mut self, from: &Path, to: &Path) -> io::Result<u64>;
+    fn remove_file(&mut self, path: &Path) -> io::Result<()>;
+}
+
+struct StdFileOps;
+
+impl FileOps for StdFileOps {
+    fn rename(&mut self, from: &Path, to: &Path) -> io::Result<()> {
+        fs::rename(from, to)
+    }
+
+    fn copy(&mut self, from: &Path, to: &Path) -> io::Result<u64> {
+        fs::copy(from, to)
+    }
+
+    fn remove_file(&mut self, path: &Path) -> io::Result<()> {
+        fs::remove_file(path)
+    }
+}
+
+fn write_file_with(
+    path: &Path,
+    contents: &str,
+    options: &WriteOptions,
+    ops: &mut impl FileOps,
+) -> anyhow::Result<()> {
+    let parent = path
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    fs::create_dir_all(parent)
+        .with_context(|| format!("failed to create {}", display_path(parent)))?;
+
+    let file_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .context("target path has no valid file name")?;
+    let staged = parent.join(format!(".{file_name}.me-write-{}", std::process::id()));
     {
-        fs::create_dir_all(parent)
-            .with_context(|| format!("failed to create {}", display_path(parent)))?;
+        let mut file = fs::File::create(&staged)
+            .with_context(|| format!("failed to stage {}", display_path(path)))?;
+        file.write_all(contents.as_bytes())
+            .with_context(|| format!("failed to write {}", display_path(&staged)))?;
+        file.sync_all()
+            .with_context(|| format!("failed to flush {}", display_path(&staged)))?;
     }
-    fs::write(path, contents).with_context(|| format!("failed to write {}", display_path(path)))
+
+    if let Some(backup_path) = &options.backup_path
+        && path.exists()
+    {
+        if let Some(parent) = backup_path.parent().filter(|p| !p.as_os_str().is_empty()) {
+            fs::create_dir_all(parent)
+                .with_context(|| format!("failed to create {}", display_path(parent)))?;
+        }
+        ops.copy(path, backup_path)
+            .with_context(|| format!("failed to create backup {}", display_path(backup_path)))?;
+    }
+
+    let rollback = parent.join(format!(".{file_name}.me-prev-{}", std::process::id()));
+    let had_original = path.exists();
+    if had_original {
+        ops.rename(path, &rollback)
+            .with_context(|| format!("failed to stage backup for {}", display_path(path)))?;
+    }
+
+    if let Err(error) = ops.rename(&staged, path) {
+        let _ = ops.remove_file(&staged);
+        if had_original && rollback.exists() {
+            let _ = ops.rename(&rollback, path);
+        }
+        return Err(error).with_context(|| format!("failed to replace {}", display_path(path)));
+    }
+
+    if rollback.exists() {
+        let _ = ops.remove_file(&rollback);
+    }
+    Ok(())
 }
 
 fn display_path(path: &Path) -> String {
@@ -797,7 +876,35 @@ impl InteractiveModeExt for InteractiveMode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
+
+    struct TestFileOps<F> {
+        rename_fn: F,
+    }
+
+    impl<F> TestFileOps<F> {
+        fn new(rename_fn: F) -> Self {
+            Self { rename_fn }
+        }
+    }
+
+    impl<F> FileOps for TestFileOps<F>
+    where
+        F: FnMut(&Path, &Path) -> io::Result<()>,
+    {
+        fn rename(&mut self, from: &Path, to: &Path) -> io::Result<()> {
+            (self.rename_fn)(from, to)
+        }
+
+        fn copy(&mut self, from: &Path, to: &Path) -> io::Result<u64> {
+            fs::copy(from, to)
+        }
+
+        fn remove_file(&mut self, path: &Path) -> io::Result<()> {
+            fs::remove_file(path)
+        }
+    }
 
     #[test]
     fn zsh_targets_split_login_and_interactive_files() {
@@ -951,5 +1058,41 @@ mod tests {
 
         assert_eq!(integrations.len(), 1);
         assert_eq!(integrations[0].shell, Some(Shell::Zsh));
+    }
+
+    #[test]
+    fn atomic_write_keeps_original_file_when_rename_fails() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join(".zshrc");
+        fs::write(&path, "before\n").unwrap();
+        let seen = Arc::new(Mutex::new(Vec::new()));
+        let recorder = seen.clone();
+        let path_for_closure = path.clone();
+        let first_failure = Arc::new(Mutex::new(true));
+        let failure_gate = first_failure.clone();
+
+        let error = write_file_with(
+            &path,
+            "after\n",
+            &WriteOptions::default(),
+            &mut TestFileOps::new(move |from: &Path, to: &Path| {
+                recorder
+                    .lock()
+                    .unwrap()
+                    .push((from.to_path_buf(), to.to_path_buf()));
+                if to == path_for_closure {
+                    let mut should_fail = failure_gate.lock().unwrap();
+                    if *should_fail {
+                        *should_fail = false;
+                        return Err(io::Error::other("rename failed"));
+                    }
+                }
+                fs::rename(from, to)
+            }),
+        )
+        .unwrap_err();
+
+        assert!(error.to_string().contains("failed to replace"));
+        assert_eq!(fs::read_to_string(&path).unwrap(), "before\n");
     }
 }
