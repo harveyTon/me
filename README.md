@@ -2,48 +2,26 @@
 
 # me
 
-A calm, context-aware replacement for `whoami`.
+A better `whoami` for your shell — shows who you are, where you are, and what you're working on.
 
-`me` keeps the Unix-tool shape: small, fast, local-first, and scriptable. It adds enough structure to answer "who am I here?" without becoming a system inventory tool.
+## Install
 
-## Quick Example
-
-```txt
-user@dev-machine  zsh
-
-uid:        501
-gid:        20
-groups:     staff, admin, _developer (+2)
-privilege:  user
-ssh:        no
-network:    192.168.0.10 (+2)
-
-pwd:        /Users/user/dev/me
-
-context:    rust (1.94.1) · git(main)
-```
-
-## Installation
-
-### macOS (Homebrew, recommended)
+### macOS (Homebrew)
 
 ```bash
 brew tap harveyTon/me
 brew install me
 ```
 
-### macOS / Linux (one-line install)
+### Other platforms
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh)
 ```
 
-### Download a release binary
-
 Releases: [github.com/harveyTon/me/releases](https://github.com/harveyTon/me/releases)
-Prebuilt archives are available for macOS, Linux, and Windows.
 
-### From Source
+### From source
 
 ```bash
 git clone https://github.com/harveyTon/me.git
@@ -51,54 +29,14 @@ cd me
 cargo build --locked --release
 ```
 
-Binary:
-
 ```bash
 target/release/me
 ```
 
-### Verify the install
-
-```bash
-me
-me --compact
-```
-
-## Why `me`
-
-`whoami` is great when all you want is the username:
-
-```console
-$ whoami
-user
-```
-
-`me` keeps that shape, but answers the follow-up questions I usually check right after:
-
-```console
-$ me
-user@dev-machine  zsh
-
-uid:        501
-gid:        20
-groups:     staff, admin, _developer (+2)
-privilege:  user
-ssh:        no
-network:    192.168.0.10 (+2)
-
-pwd:        /Users/user/dev/me
-
-context:    rust (1.94.1) · git(main)
-```
-
-The goal stays narrow: identity first, context second, location included, and no drift into a general system inspector.
-
-## Examples
-
-### Local project
+## Example
 
 ```txt
-user@dev-machine  zsh
+tiger@TigerdeMac-mini  zsh
 
 uid:        501
 gid:        20
@@ -111,267 +49,52 @@ sudo:       no
 ssh:        no
 network:    192.168.0.10 (+2)
 
-pwd:        /Users/user/dev/me
+pwd:        /Users/tiger/dev/me
 
-context:    rust (1.94.1) · git(main)
+context:    rust 1.94.1 · git(main)
 ```
 
-### SSH Session
+`whoami` tells you *who you are*.
 
-```txt
-user@server-01  bash
+`me` tells you:
+- who you are
+- where you are (`pwd`)
+- what environment you're in (`ssh` / `sudo`)
+- what project you're working on (`rust` / `node` / `python` / ...)
 
-uid:        1000
-gid:        1000
-groups:     user, deploy
-pid:        24811
-ppid:       24803
-tty:        pts/0
-privilege:  user
-sudo:       no
-ssh:        yes
-network:    10.0.0.5
+## Project context
 
-pwd:        /srv/app
+`me` automatically detects common project types:
 
-context:    rust (1.94.1) · git(main)
-```
+- Rust
+- Node (`pnpm` / `yarn` / `npm` / `turbo` / `nx`)
+- Python (with virtualenv)
+- Go
+- Java (`Maven` / `Gradle`)
+- Ruby
+- C / C++
+- PHP
+- Lua
+- Swift
+- R
+- C#
 
-### sudo
+Multiple project signals can coexist.
 
-```txt
-root@server-01  bash
+Default output stays minimal, but full context is available in JSON.
 
-uid:        0
-gid:        0
-groups:     root
-pid:        24902
-ppid:       24890
-tty:        pts/0
-privilege:  root
-sudo:       yes
-ssh:        yes
-network:    10.0.0.5
+## Other modes
 
-pwd:        /srv/app
-
-context:    rust (1.94.1) · git(main)
-```
-
-### Compact Mode
-
-```txt
-user@dev-machine · local · rust git:main · me
-```
-
-### JSON
-
-```json
-{
-  "user": "user",
-  "host": "dev-machine",
-  "privilege": "user",
-  "ssh": false,
-  "pwd": {
-    "raw": "/Users/user/dev/me",
-    "display": "/Users/user/dev/me"
-  },
-  "context": {
-    "project": {
-      "kind": "rust",
-      "version": "1.94.1"
-    },
-    "git": {
-      "branch": "main"
-    }
-  }
-}
-```
-
-## Usage
-
-```bash
-me
-me --compact
-me --json
-me --help
-```
-
-Field filters:
-
-```bash
-me -u
-me -u -h
-me -n
-```
-
-Other modes:
-
-```bash
-me --plain
-me --format config
-me --watch
-me --compact --fast
-me --full
-```
-
-## Output Modes
-
-### Default
-
-Human-friendly block output:
-
-```bash
-me
-```
-
-### Compact
-
-One-line output for prompts and quick checks:
+Compact:
 
 ```bash
 me --compact
 ```
 
-```txt
-user@dev-machine · local · rust git:main · me
-```
-
-### JSON
-
-Machine-readable output for scripts:
+JSON:
 
 ```bash
 me --json
 ```
 
-```json
-{
-  "user": "user",
-  "host": "dev-machine",
-  "privilege": "user",
-  "sudo": false,
-  "ssh": false,
-  "pwd": {
-    "raw": "/Users/user/dev/me",
-    "display": "/Users/user/dev/me"
-  }
-}
-```
-
-## Context Awareness
-
-`me` detects a small set of local context signals automatically:
-
-- SSH sessions
-- Docker/container environments
-- Rust projects via `Cargo.toml`
-- Node projects via `package.json`
-- Git branches when the current directory is inside a Git work tree
-
-Context is summarized as a secondary signal:
-
-```txt
-context:    rust (1.94.1) · git(main)
-```
-
-The default command stays local-first. It does not query cloud identity, inspect remote services, or perform public IP lookups.
-
-## Shell Integration
-
-### zsh
-
-```zsh
-PROMPT='$(me --compact --fast) %~ %# '
-```
-
-### bash
-
-```bash
-PS1='$(me --compact --fast) \w \$ '
-```
-
-Prompt commands run often. `--fast` keeps the default network summary but skips slower context version checks. If your prompt still feels slow, keep `me --compact` out of the hot path or cache its output in your shell configuration.
-
-## Configuration
-
-Config file:
-
-```txt
-~/.config/me/config.yaml
-```
-
-`me` creates the default config on first run if it does not exist. If the file is invalid, `me` prints a warning and falls back to built-in defaults.
-
-Minimal example:
-
-```yaml
-view: block
-icons: auto
-
-context:
-  enabled: true
-  project: true
-  container: true
-  ssh: true
-  git: true
-```
-
-CLI flags override environment variables, which override config, which overrides defaults.
-
-## Philosophy
-
-`me` is identity-first.
-
-The default output should answer the common question quickly: who am I, on which machine, in what session?
-
-Context is useful, but it should not dominate the output. It appears as a quiet secondary signal after the main identity and state fields.
-
-There is no heavy UI, no daemon, and no plugin system. The output is plain text by default and should remain readable in any terminal, with or without color.
-
-## Release
-
-The current version is `v0.2.3`. Releases follow semantic versioning.
-
-Build local release artifacts:
-
-```bash
-scripts/build.sh
-```
-
-The GitHub release workflow builds all release artifacts. The local script builds host-supported targets by default; pass a specific Rust target to build one artifact.
-
-Linux ARM64 cross-compilation uses `cross` when the host is not Linux ARM64. Windows MSVC artifacts are built on Windows runners.
-
-Create the release tag:
-
-```bash
-git tag -a v0.2.3 -m "Release v0.2.3"
-git push origin v0.2.3
-```
-
-The GitHub Actions release workflow builds and uploads:
-
-- `me-v0.2.3-macos-arm64.tar.gz`
-- `me-v0.2.3-macos-x64.tar.gz`
-- `me-v0.2.3-linux-x64.tar.gz`
-- `me-v0.2.3-linux-arm64.tar.gz`
-- `me-v0.2.3-windows-x64.zip`
-- `me-v0.2.3-windows-arm64.zip`
-
-See `RELEASE_CHECKLIST.md` for the full release checklist.
-
-## Roadmap
-
-- Refine the default block output to remove small duplications and keep the identity summary primary.
-- Refine `--compact` for prompt usage and keep its output stable across common shell environments.
-- Improve output consistency across local, SSH, container, and non-interactive sessions.
-- Continue optimizing startup time for prompt usage while keeping the fast path predictable.
-- Refine existing project and Git branch detection where it stays quiet and useful.
-- Improve lightweight container detection without turning `me` into a general system inspector.
-- Keep release binaries, Homebrew distribution, and the install script aligned across platforms.
-- Expand snapshot coverage for output stability and keep CLI help and usage examples tight.
-
-## License
-
-[MIT](LICENSE)
+A small tool, but surprisingly useful in daily shell work.

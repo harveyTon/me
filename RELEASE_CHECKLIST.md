@@ -1,12 +1,12 @@
 # Release Checklist
 
-Version strategy: current release is `v0.2.2` and follows semantic versioning.
+Version strategy: current release is `v0.3.0` and follows semantic versioning.
 
 ## Before Tagging
 
-- Confirm `Cargo.toml` version is `0.2.2`.
+- Confirm `Cargo.toml` version is `0.3.0`.
 - Confirm `README.md` examples match the current output.
-- Confirm `man/man1/me.1` documents the current CLI flags.
+- Confirm `man/man1/me.1` documents the current CLI flags and project context summary.
 - Run:
 
 ```bash
@@ -18,22 +18,22 @@ scripts/check-release.sh
 ```bash
 git status --short
 git add Cargo.toml Cargo.lock README.md README_CN.md RELEASE_NOTES.md RELEASE_CHECKLIST.md HOMEBREW.md .github/workflows/release.yml scripts man src tests
-git commit -m "Prepare v0.2.2 release"
-git tag -a v0.2.2 -m "Release v0.2.2"
+git commit -m "Prepare v0.3.0 release"
+git tag -a v0.3.0 -m "Release v0.3.0"
 git push origin main
-git push origin v0.2.2
+git push origin v0.3.0
 ```
 
 ## Build Binaries
 
 The release workflow builds and uploads:
 
-- `me-v0.2.2-macos-arm64.tar.gz`
-- `me-v0.2.2-macos-x64.tar.gz`
-- `me-v0.2.2-linux-x64.tar.gz`
-- `me-v0.2.2-linux-arm64.tar.gz`
-- `me-v0.2.2-windows-x64.zip`
-- `me-v0.2.2-windows-arm64.zip`
+- `me-v0.3.0-macos-arm64.tar.gz`
+- `me-v0.3.0-macos-x64.tar.gz`
+- `me-v0.3.0-linux-x64.tar.gz`
+- `me-v0.3.0-linux-arm64.tar.gz`
+- `me-v0.3.0-windows-x64.zip`
+- `me-v0.3.0-windows-arm64.zip`
 - `SHA256SUMS.txt`
 
 For a local build on a supported host:
@@ -61,7 +61,7 @@ Windows MSVC artifacts are built on Windows runners. macOS artifacts are built o
 
 ```bash
 tmpdir="$(mktemp -d)"
-curl -L -o "${tmpdir}/me.tar.gz" https://github.com/harveyTon/me/releases/download/v0.2.2/me-v0.2.2-linux-x64.tar.gz
+curl -L -o "${tmpdir}/me.tar.gz" https://github.com/harveyTon/me/releases/download/v0.3.0/me-v0.3.0-linux-x64.tar.gz
 tar -C "${tmpdir}" -xzf "${tmpdir}/me.tar.gz"
 "${tmpdir}/me" --help
 ```
@@ -72,7 +72,7 @@ macOS:
 
 ```bash
 tmpdir="$(mktemp -d)"
-curl -L -o "${tmpdir}/me.tar.gz" https://github.com/harveyTon/me/releases/download/v0.2.2/me-v0.2.2-macos-arm64.tar.gz
+curl -L -o "${tmpdir}/me.tar.gz" https://github.com/harveyTon/me/releases/download/v0.3.0/me-v0.3.0-macos-arm64.tar.gz
 tar -C "${tmpdir}" -xzf "${tmpdir}/me.tar.gz"
 "${tmpdir}/me" --help
 ```
@@ -81,7 +81,7 @@ Linux:
 
 ```bash
 tmpdir="$(mktemp -d)"
-curl -L -o "${tmpdir}/me.tar.gz" https://github.com/harveyTon/me/releases/download/v0.2.2/me-v0.2.2-linux-x64.tar.gz
+curl -L -o "${tmpdir}/me.tar.gz" https://github.com/harveyTon/me/releases/download/v0.3.0/me-v0.3.0-linux-x64.tar.gz
 tar -C "${tmpdir}" -xzf "${tmpdir}/me.tar.gz"
 "${tmpdir}/me" --help
 ```
@@ -89,8 +89,8 @@ tar -C "${tmpdir}" -xzf "${tmpdir}/me.tar.gz"
 Windows PowerShell:
 
 ```powershell
-$tmpdir = New-Item -ItemType Directory -Force "$env:TEMP\me-v0.2.2"
-Invoke-WebRequest -Uri https://github.com/harveyTon/me/releases/download/v0.2.2/me-v0.2.2-windows-x64.zip -OutFile "$tmpdir\me.zip"
+$tmpdir = New-Item -ItemType Directory -Force "$env:TEMP\me-v0.3.0"
+Invoke-WebRequest -Uri https://github.com/harveyTon/me/releases/download/v0.3.0/me-v0.3.0-windows-x64.zip -OutFile "$tmpdir\me.zip"
 Expand-Archive "$tmpdir\me.zip" -DestinationPath $tmpdir -Force
 & "$tmpdir\me.exe" --help
 ```
@@ -112,7 +112,7 @@ If the tap update job fails, update the formula manually:
 - Generate the release tarball SHA:
 
 ```bash
-curl -L https://github.com/harveyTon/me/archive/refs/tags/v0.2.2.tar.gz | shasum -a 256
+curl -L https://github.com/harveyTon/me/archive/refs/tags/v0.3.0.tar.gz | shasum -a 256
 ```
 
 - Update `Formula/me.rb` in the Homebrew tap with the new URL and real SHA.
@@ -124,7 +124,7 @@ curl -L https://github.com/harveyTon/me/archive/refs/tags/v0.2.2.tar.gz | shasum
 Git:
 
 ```bash
-cargo install --git https://github.com/harveyTon/me --tag v0.2.2
+cargo install --git https://github.com/harveyTon/me --tag v0.3.0
 ```
 
 GitHub Releases installer on macOS/Linux:
@@ -136,7 +136,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/in
 Pinned version:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh) -- v0.2.2
+bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh) -- v0.3.0
 ```
 
 Homebrew, after `harveyTon/homebrew-me` is published:

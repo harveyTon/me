@@ -1,5 +1,58 @@
 # Release Notes
 
+## v0.3.0
+
+Expanded project context detection for `me`, a better `whoami` for your shell.
+
+### Highlights
+
+- **Project sensing is now detector-based**: built-in project context detection uses an internal compile-time registry, making new project types easy to add without centralizing logic in one file.
+- **Multiple project signals can coexist**: `me` can now report more than one project context in the same directory instead of collapsing to a single match.
+- **Structured project context in JSON**: JSON output now exposes `context.projects` as structured entries while keeping Git context separate and machine-friendly.
+- **Broader built-in project support**: project detection now covers Rust, Node, Python, Go, Java, Ruby, C/C++, PHP, Lua, Swift, R, and C#.
+- **Richer Node, Python, and Java context**: Node surfaces common package-manager and workspace clues, Python includes virtualenv names, and Java distinguishes Maven and Gradle.
+- **Text output stays bounded**: block and compact output now use a shared density limit for project-related context, folding overflow into `(+N)` instead of growing without bound.
+- **Default output remains quiet**: identity, session, `pwd`, network, and Git semantics stay stable while project context becomes more capable underneath.
+
+### Install
+
+Recommended on macOS:
+
+```bash
+brew tap harveyTon/me
+brew install me
+```
+
+One-line installer on macOS and Linux:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh)
+```
+
+Binary release artifacts are archives. Unix archives contain `me`; Windows archives contain `me.exe`.
+
+Checksums are published with the release as `SHA256SUMS.txt`.
+
+### Release Artifacts
+
+Supported platforms:
+
+- macOS arm64
+- macOS x64
+- Linux x64
+- Linux arm64
+- Windows x64
+- Windows arm64
+
+Expected binary artifact names:
+
+- `me-v0.3.0-macos-arm64.tar.gz`
+- `me-v0.3.0-macos-x64.tar.gz`
+- `me-v0.3.0-linux-x64.tar.gz`
+- `me-v0.3.0-linux-arm64.tar.gz`
+- `me-v0.3.0-windows-x64.zip`
+- `me-v0.3.0-windows-arm64.zip`
+
 ## v0.2.3
 
 Location and color-mode refinement for `me`, a modern, context-aware replacement for `whoami`.
@@ -13,119 +66,3 @@ Location and color-mode refinement for `me`, a modern, context-aware replacement
 - **Color mode is formalized**: config now supports `color: auto | on | off`, with `--no-color` and `NO_COLOR` still taking precedence.
 - **Fast mode keeps location available**: `pwd` remains present in block, compact, and JSON output even when `--fast` is used.
 - **Windows test stability improved**: release validation no longer assumes one exact path normalization format on Windows runners.
-
-### Install
-
-Recommended on macOS:
-
-```bash
-brew tap harveyTon/me
-brew install me
-```
-
-One-line installer on macOS and Linux:
-
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh)
-```
-
-Binary release artifacts are archives. Unix archives contain `me`; Windows archives contain `me.exe`.
-
-Checksums are published with the release as `SHA256SUMS.txt`.
-
-### Release Artifacts
-
-Supported platforms:
-
-- macOS arm64
-- macOS x64
-- Linux x64
-- Linux arm64
-- Windows x64
-- Windows arm64
-
-Expected binary artifact names:
-
-- `me-v0.2.3-macos-arm64.tar.gz`
-- `me-v0.2.3-macos-x64.tar.gz`
-- `me-v0.2.3-linux-x64.tar.gz`
-- `me-v0.2.3-linux-arm64.tar.gz`
-- `me-v0.2.3-windows-x64.zip`
-- `me-v0.2.3-windows-arm64.zip`
-
-## v0.2.1
-
-JSON cleanup update for `me`, a modern, context-aware replacement for `whoami`.
-
-### Highlights
-
-- Human-readable default block output.
-- Compact output for prompts and quick checks.
-- JSON output for scripts.
-- Fast-mode JSON now omits absent project versions instead of emitting `"version": null`.
-- Config-style output for simple shell parsing.
-- Field selectors for common identity, runtime, state, and network fields.
-- Local context detection for SSH sessions, containers, Rust projects, Node projects, and lightweight Git branch context.
-- SSH session detection remains meaningful under common `sudo` execution paths.
-- Default block output keeps the network summary visible, including in `--fast` mode.
-- `--fast` is available for prompt usage and skips slower context version checks without dropping explicit or default network output.
-- Watch mode for lightweight refreshes.
-- Copy mode for local clipboard workflows.
-- Man page included at `man/man1/me.1`.
-- `me` now creates `~/.config/me/config.yaml` on first run when it does not exist.
-- Invalid config files now emit a warning and fall back to defaults instead of blocking normal use.
-- Theme settings now participate in the render path rather than being ignored.
-
-### Install
-
-Recommended on macOS:
-
-```bash
-brew tap harveyTon/me
-brew install me
-```
-
-One-line installer on macOS and Linux:
-
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh)
-```
-
-Homebrew tap, after publishing `harveyTon/homebrew-me`:
-
-```bash
-brew tap harveyTon/me
-brew install me
-```
-
-Binary release artifacts are archives. Unix archives contain `me`; Windows archives contain `me.exe`.
-
-Checksums are published with the release as `SHA256SUMS.txt`.
-
-### Build From Source
-
-```bash
-git clone https://github.com/harveyTon/me.git
-cd me
-cargo build --locked --release
-```
-
-### Release Artifacts
-
-Supported platforms:
-
-- macOS arm64
-- macOS x64
-- Linux x64
-- Linux arm64
-- Windows x64
-- Windows arm64
-
-Expected binary artifact names:
-
-- `me-v0.2.1-macos-arm64.tar.gz`
-- `me-v0.2.1-macos-x64.tar.gz`
-- `me-v0.2.1-linux-x64.tar.gz`
-- `me-v0.2.1-linux-arm64.tar.gz`
-- `me-v0.2.1-windows-x64.zip`
-- `me-v0.2.1-windows-arm64.zip`

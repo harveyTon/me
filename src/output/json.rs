@@ -72,8 +72,8 @@ fn context_json(info: &MeInfo) -> Option<Value> {
     if let Some(git) = &info.context.git {
         insert(&mut context, "git", json!(git));
     }
-    if let Some(project) = &info.context.project {
-        insert(&mut context, "project", json!(project));
+    if !info.context.projects.is_empty() {
+        insert(&mut context, "projects", json!(info.context.projects));
     }
     (!context.is_empty()).then_some(Value::Object(context))
 }

@@ -20,7 +20,11 @@ fn detect_with(config: &ContextConfig, fast: bool) -> ContextInfo {
     ContextInfo {
         ssh: config.ssh.then(ssh::detect).flatten(),
         container: config.container.then(container::detect).flatten(),
-        project: config.project.then(|| project::detect(fast)).flatten(),
+        projects: if config.project {
+            project::detect(fast)
+        } else {
+            Vec::new()
+        },
         git: config.git.then(|| git::detect(fast)).flatten(),
     }
 }

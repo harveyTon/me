@@ -3,8 +3,7 @@ use crate::{
     output::{
         config_fmt::value_for,
         semantics::{
-            ContextTextStyle, compact_cwd_name, compact_env_label, context_text, display_host,
-            display_user,
+            compact_cwd_name, compact_env_label, compact_project_parts, display_host, display_user,
         },
     },
 };
@@ -33,9 +32,7 @@ pub fn render_compact(info: &MeInfo, fields: &[Field]) -> String {
     } else {
         parts.push(compact_identity(info));
         parts.push(compact_env_label(info));
-        if let Some(project) = context_text(info, ContextTextStyle::Compact) {
-            parts.push(project);
-        }
+        parts.extend(compact_project_parts(info));
         if let Some(cwd) = compact_cwd_name(info) {
             parts.push(cwd);
         }

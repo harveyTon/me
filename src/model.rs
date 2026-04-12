@@ -139,6 +139,8 @@ pub struct ProjectContext {
     pub kind: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub details: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -150,7 +152,8 @@ pub struct GitContext {
 pub struct ContextInfo {
     pub ssh: Option<SshContext>,
     pub container: Option<ContainerContext>,
-    pub project: Option<ProjectContext>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub projects: Vec<ProjectContext>,
     pub git: Option<GitContext>,
 }
 

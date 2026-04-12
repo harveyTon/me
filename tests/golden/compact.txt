@@ -1,1 +1,1 @@
-tiger@MacBook · docker · rust 1.0 git:main · me
+tiger@MacBook · docker · rust 1.0 · git:main · me

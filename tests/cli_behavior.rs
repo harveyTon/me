@@ -171,7 +171,7 @@ fn json_project_version_is_present_without_fast_and_omitted_with_fast() {
         .env("HOME", home.path())
         .assert()
         .success()
-        .stdout(predicate::str::contains("\"project\""))
+        .stdout(predicate::str::contains("\"projects\""))
         .stdout(predicate::str::contains("\"kind\": \"rust\""))
         .stdout(predicate::str::contains("\"version\":"));
 
@@ -182,7 +182,7 @@ fn json_project_version_is_present_without_fast_and_omitted_with_fast() {
         .env("HOME", home.path())
         .assert()
         .success()
-        .stdout(predicate::str::contains("\"project\""))
+        .stdout(predicate::str::contains("\"projects\""))
         .stdout(predicate::str::contains("\"kind\": \"rust\""))
         .stdout(predicate::str::contains("\"version\"").not());
 }
@@ -257,4 +257,24 @@ fn watch_json_exits_cleanly_when_pipe_closes() {
         }
         thread::sleep(Duration::from_millis(50));
     }
+}
+
+#[test]
+fn home_directory_still_shows_project_context_when_detected() {
+    let home = tempdir().unwrap();
+    fs::write(
+        home.path().join("package.json"),
+        "{ \"name\": \"home-demo\" }\n",
+    )
+    .unwrap();
+
+    Command::cargo_bin("me")
+        .unwrap()
+        .args(["--compact", "--fast", "--no-color"])
+        .current_dir(home.path())
+        .env("HOME", home.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(" · node"))
+        .stdout(predicate::str::contains(" · local · "));
 }
