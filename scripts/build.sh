@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${VERSION:-v0.3.0}"
+CRATE_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)"
+VERSION="${VERSION:-v${CRATE_VERSION}}"
 DIST_DIR="${DIST_DIR:-dist}"
 TARGET="${1:-host}"
 

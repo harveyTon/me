@@ -53,10 +53,11 @@ cd homebrew-me
 mkdir -p Formula
 ```
 
-3. Generate the release tarball SHA after `v0.3.0` is pushed:
+3. Generate the release tarball SHA after the release tag is pushed:
 
 ```bash
-curl -L https://github.com/harveyTon/me/archive/refs/tags/v0.3.0.tar.gz | shasum -a 256
+VERSION="vX.Y.Z"
+curl -L "https://github.com/harveyTon/me/archive/refs/tags/${VERSION}.tar.gz" | shasum -a 256
 ```
 
 4. Update the URL and SHA in `Formula/me.rb`.

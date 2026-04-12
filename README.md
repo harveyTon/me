@@ -297,7 +297,7 @@ There is no heavy UI, no daemon, and no plugin system. The output is plain text 
 
 ## Release
 
-The current version is `v0.3.0`. Releases follow semantic versioning.
+The current version is tracked in `Cargo.toml`. Releases follow semantic versioning.
 
 The GitHub release workflow builds artifacts for:
 

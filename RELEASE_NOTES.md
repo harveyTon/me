@@ -46,12 +46,12 @@ Supported platforms:
 
 Expected binary artifact names:
 
-- `me-v0.3.0-macos-arm64.tar.gz`
-- `me-v0.3.0-macos-x64.tar.gz`
-- `me-v0.3.0-linux-x64.tar.gz`
-- `me-v0.3.0-linux-arm64.tar.gz`
-- `me-v0.3.0-windows-x64.zip`
-- `me-v0.3.0-windows-arm64.zip`
+- `me-<tag>-macos-arm64.tar.gz`
+- `me-<tag>-macos-x64.tar.gz`
+- `me-<tag>-linux-x64.tar.gz`
+- `me-<tag>-linux-arm64.tar.gz`
+- `me-<tag>-windows-x64.zip`
+- `me-<tag>-windows-arm64.zip`
 
 ## v0.2.3
 
