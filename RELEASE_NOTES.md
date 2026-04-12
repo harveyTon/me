@@ -1,5 +1,16 @@
 # Release Notes
 
+## v0.3.3
+
+Release-prep alignment for the current `me` CLI surface.
+
+### Highlights
+
+- Kept multi-project context coverage and bounded output density aligned across README, man page, and release docs.
+- Carried forward shell integration install and uninstall behavior, including managed block markers and non-interactive safeguards.
+- Polished `me update` install-source reporting so Homebrew installs on macOS are identified as `homebrew`, release binaries remain `release binary`, and unclear cases fall back to `unknown`.
+- Tightened release-facing documentation and checklist text so install, update, artifact, and verification steps match the current repository state.
+
 ## v0.3.1
 
 Shell integration polish for `me install` and `me uninstall`.

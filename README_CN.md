@@ -15,13 +15,15 @@ brew tap harveyTon/me
 brew install me
 ```
 
-### 其他平台
+### macOS / Linux（一行安装）
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh)
 ```
 
 发布页面：[github.com/harveyTon/me/releases](https://github.com/harveyTon/me/releases)
+
+其他平台请直接使用发布页中的 release 二进制。
 
 ### 从源码构建
 

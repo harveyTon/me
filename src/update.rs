@@ -21,7 +21,7 @@ enum InstallSource {
 impl InstallSource {
     fn label(&self) -> &'static str {
         match self {
-            Self::Homebrew => "Homebrew",
+            Self::Homebrew => "homebrew",
             Self::ReleaseBinary(_) => "release binary",
             Self::Unknown(_) => "unknown",
         }
@@ -110,27 +110,79 @@ fn detect_source() -> InstallSource {
         };
     }
 
-    if is_homebrew_install(&exe) {
+    detect_source_for(&exe, env::consts::OS, brew_prefix_for("me").as_deref())
+}
+
+fn detect_source_for(exe: &Path, os: &str, brew_prefix: Option<&Path>) -> InstallSource {
+    if os == "macos" && is_homebrew_candidate(exe, brew_prefix) {
         return InstallSource::Homebrew;
     }
 
-    if looks_like_release_binary(&exe) {
-        InstallSource::ReleaseBinary(exe)
+    if looks_like_release_binary_for(exe, os) {
+        InstallSource::ReleaseBinary(exe.to_path_buf())
     } else {
-        InstallSource::Unknown(exe)
+        InstallSource::Unknown(exe.to_path_buf())
     }
 }
 
-fn is_homebrew_install(exe: &Path) -> bool {
-    let canonical = fs::canonicalize(exe).unwrap_or_else(|_| exe.to_path_buf());
-    let Ok(output) = Command::new("brew").args(["--prefix", "me"]).output() else {
-        return false;
-    };
+fn brew_prefix_for(formula: &str) -> Option<PathBuf> {
+    let output = Command::new("brew")
+        .args(["--prefix", formula])
+        .output()
+        .ok()?;
     if !output.status.success() {
-        return false;
+        return None;
     }
+
     let prefix = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-    !prefix.is_empty() && canonical.starts_with(Path::new(&prefix))
+    if prefix.is_empty() {
+        None
+    } else {
+        Some(PathBuf::from(prefix))
+    }
+}
+
+fn is_homebrew_candidate(exe: &Path, brew_prefix: Option<&Path>) -> bool {
+    let canonical = fs::canonicalize(exe).unwrap_or_else(|_| exe.to_path_buf());
+    is_homebrew_path(exe, &canonical, brew_prefix)
+}
+
+fn is_homebrew_path(exe: &Path, canonical: &Path, brew_prefix: Option<&Path>) -> bool {
+    if matches_homebrew_layout(exe) || matches_homebrew_layout(canonical) {
+        return true;
+    }
+
+    if let Some(prefix) = brew_prefix {
+        let bin = prefix.join("bin").join(binary_name());
+        let opt = prefix.join("opt").join("me");
+        let cellar = prefix.join("Cellar").join("me");
+        if exe == bin || canonical == bin {
+            return true;
+        }
+        if exe.starts_with(&opt)
+            || canonical.starts_with(&opt)
+            || exe.starts_with(&cellar)
+            || canonical.starts_with(&cellar)
+        {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn matches_homebrew_layout(path: &Path) -> bool {
+    let path = path.to_string_lossy();
+    path == "/opt/homebrew/bin/me"
+        || path == "/usr/local/bin/me"
+        || path.starts_with("/opt/homebrew/Cellar/me/")
+        || path.starts_with("/usr/local/Cellar/me/")
+        || path.starts_with("/opt/homebrew/opt/me/")
+        || path.starts_with("/usr/local/opt/me/")
+}
+
+fn binary_name() -> &'static str {
+    if cfg!(windows) { "me.exe" } else { "me" }
 }
 
 fn looks_like_release_binary(exe: &Path) -> bool {
@@ -142,6 +194,29 @@ fn looks_like_release_binary(exe: &Path) -> bool {
     }
     let path = exe.to_string_lossy();
     !path.contains("/target/") && !path.contains("\\target\\") && !path.contains(".cargo")
+}
+
+fn looks_like_release_binary_for(exe: &Path, os: &str) -> bool {
+    if !looks_like_release_binary(exe) {
+        return false;
+    }
+
+    if os != "macos" {
+        return true;
+    }
+
+    let path = exe.to_string_lossy();
+    if path.ends_with("/.local/bin/me") {
+        return true;
+    }
+
+    if path == "/usr/local/bin/me" {
+        return fs::symlink_metadata(exe)
+            .map(|metadata| !metadata.file_type().is_symlink())
+            .unwrap_or(false);
+    }
+
+    false
 }
 
 fn update_homebrew() -> anyhow::Result<()> {
@@ -370,4 +445,31 @@ fn parse_version(version: &str) -> Vec<u64> {
         .filter(|part| !part.is_empty())
         .map(|part| part.parse::<u64>().unwrap_or(0))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{InstallSource, detect_source_for};
+    use std::path::Path;
+
+    #[test]
+    fn detects_macos_homebrew_from_standard_prefix_path() {
+        let source = detect_source_for(Path::new("/opt/homebrew/bin/me"), "macos", None);
+        assert_eq!(source, InstallSource::Homebrew);
+    }
+
+    #[test]
+    fn detects_linux_release_binary_from_standard_install_path() {
+        let source = detect_source_for(Path::new("/usr/local/bin/me"), "linux", None);
+        assert_eq!(
+            source,
+            InstallSource::ReleaseBinary("/usr/local/bin/me".into())
+        );
+    }
+
+    #[test]
+    fn falls_back_to_unknown_when_source_is_not_safe_to_assume() {
+        let source = detect_source_for(Path::new("/tmp/me"), "macos", None);
+        assert_eq!(source, InstallSource::Unknown("/tmp/me".into()));
+    }
 }
