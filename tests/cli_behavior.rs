@@ -176,7 +176,8 @@ fn selector_does_not_leak_project_context() {
         .arg("-n")
         .assert()
         .success()
-        .stdout(predicate::str::contains("network: "))
+        .stdout(predicate::str::contains("network:\n"))
+        .stdout(predicate::str::contains("summary:"))
         .stdout(predicate::str::contains("--- context ---").not())
         .stdout(predicate::str::contains("project:").not());
 }
@@ -199,6 +200,48 @@ fn fast_flag_produces_output() {
         .assert()
         .success()
         .stdout(predicate::str::is_empty().not());
+}
+
+#[test]
+fn default_block_output_uses_grouped_structure_without_header() {
+    Command::cargo_bin("me")
+        .unwrap()
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("identity:\n"))
+        .stdout(predicate::str::contains("\nsystem:\n"))
+        .stdout(predicate::str::contains("\nsession:\n"))
+        .stdout(predicate::str::contains("\nnetwork:\n"))
+        .stdout(predicate::str::contains("\nlocation:\n"))
+        .stdout(predicate::str::contains("@").not());
+}
+
+#[test]
+fn fast_block_output_keeps_same_group_structure() {
+    Command::cargo_bin("me")
+        .unwrap()
+        .arg("--fast")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("identity:\n"))
+        .stdout(predicate::str::contains("\nsystem:\n"))
+        .stdout(predicate::str::contains("\nsession:\n"))
+        .stdout(predicate::str::contains("\nnetwork:\n"))
+        .stdout(predicate::str::contains("\nlocation:\n"));
+}
+
+#[test]
+fn full_block_output_keeps_same_group_structure() {
+    Command::cargo_bin("me")
+        .unwrap()
+        .arg("--full")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("identity:\n"))
+        .stdout(predicate::str::contains("\nsystem:\n"))
+        .stdout(predicate::str::contains("\nsession:\n"))
+        .stdout(predicate::str::contains("\nnetwork:\n"))
+        .stdout(predicate::str::contains("\nlocation:\n"));
 }
 
 #[test]

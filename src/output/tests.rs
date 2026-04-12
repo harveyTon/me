@@ -133,42 +133,61 @@ fn block_truncates_groups_and_network_by_default() {
         &Field::defaults(),
         &RenderOptions::plain_for_tests(),
     );
-    assert!(rendered.contains("groups:     staff, admin, _developer (+2)"));
-    assert!(rendered.contains("network:    ipv4 192.168.1.10 (+2), ipv6 fd12::1 (+1)"));
+    assert!(rendered.contains("  groups:"));
+    assert!(rendered.contains("staff, admin, _developer (+2)"));
+    assert!(rendered.contains("  summary:"));
+    assert!(rendered.contains("ipv4 192.168.1.10 (+2), ipv6 fd12::1 (+1)"));
 }
 
 #[test]
-fn block_header_uses_subtle_shell_separator() {
+fn block_removes_header_and_moves_identity_into_body() {
     let rendered = render_block(
         &sample_info(),
         &Field::defaults(),
         &RenderOptions::plain_for_tests(),
     );
-    assert!(rendered.starts_with("tiger@MacBook  zsh\n\n"));
+    assert!(!rendered.starts_with("tiger@MacBook"));
+    assert!(rendered.starts_with("identity:\n"));
+    assert!(rendered.contains("  user:"));
+    assert!(rendered.contains("tiger\n"));
+    assert!(rendered.contains("  host:"));
+    assert!(rendered.contains("MacBook\n"));
+    assert!(rendered.contains("  shell:"));
+    assert!(rendered.contains("zsh\n"));
 }
 
 #[test]
-fn block_default_output_suppresses_shell_body_row_only() {
+fn block_groups_appear_in_fixed_order() {
     let rendered = render_block(
         &sample_info(),
         &Field::defaults(),
         &RenderOptions::plain_for_tests(),
     );
-    assert!(!rendered.contains("\nshell:"));
+
+    let identity = rendered.find("identity:\n").unwrap();
+    let system = rendered.find("\nsystem:\n").unwrap();
+    let session = rendered.find("\nsession:\n").unwrap();
+    let network = rendered.find("\nnetwork:\n").unwrap();
+    let location = rendered.find("\nlocation:\n").unwrap();
+
+    assert!(identity < system);
+    assert!(system < session);
+    assert!(session < network);
+    assert!(network < location);
 }
 
 #[test]
-fn block_default_output_includes_pwd_before_context() {
+fn block_default_output_places_pwd_and_context_in_location_group() {
     let rendered = render_block(
         &sample_info(),
         &Field::defaults(),
         &RenderOptions::plain_for_tests(),
     );
-    assert!(
-        rendered.contains(
-            "network:    ipv4 192.168.1.10 (+2), ipv6 fd12::1 (+1)\n\npwd:        /Users/tiger/dev/me\n\ncontext:"
-        )
-    );
+    assert!(rendered.contains("location:\n"));
+    assert!(rendered.contains("  pwd:"));
+    assert!(rendered.contains("/Users/tiger/dev/me\n"));
+    assert!(rendered.contains("  context:"));
+    assert!(rendered.contains("docker, rust 1.0 · git(main)\n"));
 }
 
 #[test]
@@ -180,18 +199,20 @@ fn colored_block_does_not_force_truecolor_on_values() {
 }
 
 #[test]
-fn colored_block_respects_light_theme_emphasis() {
-    let mut dark = RenderOptions::plain_for_tests();
-    dark.color = true;
-
+fn colored_block_labels_stay_ansi_safe_in_light_and_dark_modes() {
     let mut light = RenderOptions::plain_for_tests();
     light.color = true;
     light.light_theme = true;
 
-    let dark_rendered = render_block(&sample_info(), &Field::defaults(), &dark);
     let light_rendered = render_block(&sample_info(), &Field::defaults(), &light);
+    let mut dark = RenderOptions::plain_for_tests();
+    dark.color = true;
+    let dark_rendered = render_block(&sample_info(), &Field::defaults(), &dark);
 
-    assert_ne!(dark_rendered, light_rendered);
+    assert!(dark_rendered.contains("\u{1b}["));
+    assert!(light_rendered.contains("\u{1b}["));
+    assert!(!dark_rendered.contains("[38;2;"));
+    assert!(!light_rendered.contains("[38;2;"));
 }
 
 #[test]
@@ -211,7 +232,8 @@ fn context_uses_soft_label_not_decorative_rule() {
         &Field::defaults(),
         &RenderOptions::plain_for_tests(),
     );
-    assert!(rendered.contains("\ncontext:    docker, rust 1.0 · git(main)\n"));
+    assert!(rendered.contains("\n  context:"));
+    assert!(rendered.contains("docker, rust 1.0 · git(main)\n"));
     assert!(!rendered.contains("--- context ---"));
 }
 
@@ -221,7 +243,7 @@ fn block_output_renders_ssh_only_once() {
     info.ssh = true;
     let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
     assert_eq!(rendered.matches("ssh:").count(), 1);
-    assert!(rendered.contains("ssh:        yes"));
+    assert!(rendered.contains("  ssh:        yes"));
 }
 
 #[test]
@@ -229,10 +251,35 @@ fn block_full_expands_groups_and_network() {
     let mut options = RenderOptions::plain_for_tests();
     options.full = true;
     let rendered = render_block(&sample_info(), &Field::defaults(), &options);
-    assert!(rendered.contains("groups:\n  staff\n  admin\n  _developer\n  access_bpf\n  everyone"));
+    assert!(rendered.contains("identity:\n") && rendered.contains("\nsystem:\n"));
     assert!(
-        rendered.contains("network:\n  ipv4:\n    192.168.1.10\n    10.0.0.5\n    172.16.0.3\n  ipv6:\n    fd12::1\n    fd12::2")
+        rendered.contains(
+            "  groups:\n    staff\n    admin\n    _developer\n    access_bpf\n    everyone"
+        )
     );
+    assert!(
+        rendered.contains(
+            "network:\n  ipv4:\n    192.168.1.10\n    10.0.0.5\n    172.16.0.3\n  ipv6:\n    fd12::1\n    fd12::2"
+        )
+    );
+}
+
+#[test]
+fn block_full_uses_same_group_structure() {
+    let mut options = RenderOptions::plain_for_tests();
+    options.full = true;
+    let rendered = render_block(&sample_info(), &Field::defaults(), &options);
+
+    let identity = rendered.find("identity:\n").unwrap();
+    let system = rendered.find("\nsystem:\n").unwrap();
+    let session = rendered.find("\nsession:\n").unwrap();
+    let network = rendered.find("\nnetwork:\n").unwrap();
+    let location = rendered.find("\nlocation:\n").unwrap();
+
+    assert!(identity < system);
+    assert!(system < session);
+    assert!(session < network);
+    assert!(network < location);
 }
 
 #[test]
@@ -245,6 +292,17 @@ fn block_selector_does_not_render_context_section() {
     assert!(rendered.contains("network:"));
     assert!(!rendered.contains("context"));
     assert!(!rendered.contains("project:"));
+}
+
+#[test]
+fn block_omits_context_cleanly_when_absent() {
+    let mut info = sample_info();
+    info.context = ContextInfo::default();
+    let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
+    assert!(rendered.contains("location:\n"));
+    assert!(rendered.contains("  pwd:"));
+    assert!(rendered.contains("/Users/tiger/dev/me\n"));
+    assert!(!rendered.contains("context:"));
 }
 
 #[test]
@@ -360,7 +418,8 @@ fn block_shows_both_projects_and_git() {
         details: vec![".venv".into()],
     });
     let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
-    assert!(rendered.contains("rust 1.0 · python 3.12 (.venv) · git(main)"));
+    assert!(rendered.contains("context:"));
+    assert!(rendered.contains("docker, rust 1.0 · python 3.12 (.venv) · git(main)"));
 }
 
 #[test]
@@ -397,9 +456,10 @@ fn block_folds_project_related_items_after_three_entries() {
         },
     ];
     let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
-    assert!(rendered.contains(
-        "context:    docker, node 22.0.0 (pnpm, turbo) · python 3.12 (.venv) · go 1.24.0 (+2)"
-    ));
+    assert!(
+        rendered
+            .contains("docker, node 22.0.0 (pnpm, turbo) · python 3.12 (.venv) · go 1.24.0 (+2)")
+    );
     assert!(!rendered.contains("java 21 (gradle)"));
 }
 
@@ -429,7 +489,7 @@ fn block_shows_exactly_three_context_items_without_folding() {
     let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
 
     assert!(rendered.contains(
-        "context:    docker, node 22.0.0 (pnpm, turbo) · python 3.12 (.venv) · git(feature/nextjs-frontend)"
+        "docker, node 22.0.0 (pnpm, turbo) · python 3.12 (.venv) · git(feature/nextjs-frontend)"
     ));
     assert!(!rendered.contains("git(feature/nextjs-frontend) (+"));
 }
@@ -555,7 +615,8 @@ fn node_version_display_is_plain_across_outputs() {
     let config = render_config(&info, &[Field::Context], &RenderOptions::plain_for_tests());
     let json = render_json(&info, &[Field::Context]).unwrap();
 
-    assert!(block.contains("context:    docker, node 20.19.6 (pnpm, turbo) · git(v2.2.4)"));
+    assert!(block.contains("context:"));
+    assert!(block.contains("docker, node 20.19.6 (pnpm, turbo) · git(v2.2.4)"));
     assert!(compact.contains("node 20.19.6 (pnpm, turbo)"));
     assert!(
         config.contains("context = docker:abcdef123456, node 20.19.6 (pnpm, turbo), git:v2.2.4")
@@ -643,9 +704,10 @@ fn shared_text_context_semantics_stay_consistent() {
     let compact = render_compact(&info, &Field::defaults());
     let config = render_config(&info, &[Field::Context], &RenderOptions::plain_for_tests());
 
-    assert!(block.contains(
-        "context:    container, node 20.19.6 (pnpm) · python 3.12 (.venv) · git(feature/login)"
-    ));
+    assert!(block.contains("context:"));
+    assert!(
+        block.contains("container, node 20.19.6 (pnpm) · python 3.12 (.venv) · git(feature/login)")
+    );
     assert!(compact.contains(" · container · "));
     assert!(compact.contains("git:feature/login"));
     assert!(config.contains("context = container:abcdef123456, node 20.19.6 (pnpm), python 3.12 (.venv), git:feature/login"));
@@ -693,7 +755,9 @@ fn network_output_remains_unchanged_with_dense_context() {
         },
     ];
     let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
-    assert!(rendered.contains("network:    ipv4 192.168.1.10 (+2), ipv6 fd12::1 (+1)"));
+    assert!(rendered.contains("network:\n"));
+    assert!(rendered.contains("summary:"));
+    assert!(rendered.contains("ipv4 192.168.1.10 (+2), ipv6 fd12::1 (+1)"));
 }
 
 #[test]
@@ -718,9 +782,11 @@ fn block_output_formats_docker_compose_project_summary() {
 
     let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
 
-    assert!(rendered.contains(
-        "context:    docker, node 24.14.1 (pnpm) · docker compose (myapp, 6 services) · git(main)"
-    ));
+    assert!(
+        rendered.contains(
+            "docker, node 24.14.1 (pnpm) · docker compose (myapp, 6 services) · git(main)"
+        )
+    );
 }
 
 #[test]

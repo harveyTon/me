@@ -1,16 +1,24 @@
-tiger@MacBook  zsh
+identity:
+  user:   tiger
+  host:   MacBook
+  shell:  zsh
 
-uid:        501
-gid:        20
-groups:     staff, admin, _developer (+2)
-pid:        123
-ppid:       1
-tty:        ttys001
-privilege:  user
-sudo:       no
-ssh:        no
-network:    ipv4 192.168.1.10 (+2), ipv6 fd12::1 (+1)
+system:
+  uid:     501
+  gid:     20
+  groups:  staff, admin, _developer (+2)
+  pid:     123
+  ppid:    1
+  tty:     ttys001
 
-pwd:        /Users/tiger/dev/me
+session:
+  privilege:  user
+  sudo:       no
+  ssh:        no
 
-context:    docker, rust 1.0 · git(main)
+network:
+  summary:  ipv4 192.168.1.10 (+2), ipv6 fd12::1 (+1)
+
+location:
+  pwd:      /Users/tiger/dev/me
+  context:  docker, rust 1.0 · git(main)
