@@ -1,5 +1,16 @@
 # Release Notes
 
+## v0.4.0
+
+Block-output presentation update for the current `me` CLI surface.
+
+### Highlights
+
+- Reworked block-style text output into fixed `identity`, `system`, `session`, `network`, and `location` groups without a standalone header line.
+- Kept `--fast` and `--full` on the same grouped layout, with only field density changing by mode.
+- Refined block network rendering so default and fast modes show separate IPv4 and IPv6 summary rows, while `--full` keeps expanded address lists.
+- Kept compact, JSON, config, install, update, and detector behavior unchanged.
+
 ## v0.3.4
 
 Focused reliability and release-hygiene hardening.
