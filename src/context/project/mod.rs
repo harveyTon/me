@@ -1,4 +1,5 @@
 mod c_cpp;
+mod compose;
 mod csharp;
 mod detector;
 mod go;
@@ -30,8 +31,9 @@ static LUA_DETECTOR: lua::LuaDetector = lua::LuaDetector;
 static SWIFT_DETECTOR: swift::SwiftDetector = swift::SwiftDetector;
 static R_DETECTOR: r::RDetector = r::RDetector;
 static CSHARP_DETECTOR: csharp::CSharpDetector = csharp::CSharpDetector;
+static COMPOSE_DETECTOR: compose::ComposeDetector = compose::ComposeDetector;
 
-static DETECTORS: [&dyn ProjectDetector; 12] = [
+static DETECTORS: [&dyn ProjectDetector; 13] = [
     &RUST_DETECTOR,
     &NODE_DETECTOR,
     &PYTHON_DETECTOR,
@@ -44,6 +46,7 @@ static DETECTORS: [&dyn ProjectDetector; 12] = [
     &SWIFT_DETECTOR,
     &R_DETECTOR,
     &CSHARP_DETECTOR,
+    &COMPOSE_DETECTOR,
 ];
 
 pub fn detect(fast: bool) -> Vec<ProjectContext> {
@@ -81,6 +84,7 @@ pub fn project_priority(kind: &str) -> usize {
         "lua" => 9,
         "r" => 10,
         "c/cpp" => 11,
+        "docker compose" => 12,
         _ => usize::MAX,
     }
 }
@@ -95,6 +99,8 @@ pub(super) fn project_context(
     ProjectContext {
         kind: kind.into(),
         version,
+        project_name: None,
+        service_count: None,
         details,
     }
 }
@@ -261,6 +267,80 @@ mod tests {
         let detected = detect_in(with_cmake.path(), true);
         assert_eq!(detected.len(), 1);
         assert_eq!(detected[0].kind, "c/cpp");
+    }
+
+    #[test]
+    fn compose_standard_filename_is_detected_with_summary() {
+        let temp = tempdir().unwrap();
+        fs::write(
+            temp.path().join("compose.yaml"),
+            "name: myapp\nservices:\n  web:\n    image: nginx\n  db:\n    image: postgres\n",
+        )
+        .unwrap();
+
+        let detected = detect_in(temp.path(), false);
+
+        assert_eq!(detected.len(), 1);
+        assert_eq!(detected[0].kind, "docker compose");
+        assert_eq!(detected[0].project_name.as_deref(), Some("myapp"));
+        assert_eq!(detected[0].service_count, Some(2));
+    }
+
+    #[test]
+    fn compose_variant_and_override_filenames_are_detected() {
+        let variant = tempdir().unwrap();
+        fs::write(
+            variant.path().join("docker-compose.dev.yml"),
+            "services:\n  web:\n    image: nginx\n",
+        )
+        .unwrap();
+        assert_eq!(detect_in(variant.path(), true)[0].kind, "docker compose");
+
+        let override_file = tempdir().unwrap();
+        fs::write(
+            override_file.path().join("docker-compose.override.yaml"),
+            "services:\n  worker:\n    image: busybox\n",
+        )
+        .unwrap();
+        assert_eq!(
+            detect_in(override_file.path(), true)[0].kind,
+            "docker compose"
+        );
+    }
+
+    #[test]
+    fn compose_coexists_with_language_detector_after_languages() {
+        let temp = tempdir().unwrap();
+        fs::write(temp.path().join("package.json"), "{ \"name\": \"demo\" }\n").unwrap();
+        fs::write(
+            temp.path().join("compose.prod.yaml"),
+            "name: demo\nservices:\n  app:\n    image: node\n",
+        )
+        .unwrap();
+
+        let detected = detect_in(temp.path(), true);
+        let kinds: Vec<_> = detected.into_iter().map(|context| context.kind).collect();
+
+        assert_eq!(
+            kinds,
+            vec!["node".to_string(), "docker compose".to_string()]
+        );
+    }
+
+    #[test]
+    fn compose_fast_mode_skips_yaml_summary() {
+        let temp = tempdir().unwrap();
+        fs::write(
+            temp.path().join("compose.yml"),
+            "name: myapp\nservices:\n  web:\n    image: nginx\n",
+        )
+        .unwrap();
+
+        let detected = detect_in(temp.path(), true);
+
+        assert_eq!(detected[0].kind, "docker compose");
+        assert_eq!(detected[0].project_name, None);
+        assert_eq!(detected[0].service_count, None);
     }
 
     fn lock_env() -> std::sync::MutexGuard<'static, ()> {

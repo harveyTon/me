@@ -50,6 +50,7 @@ pub fn run(command: Command) -> anyhow::Result<()> {
     match command {
         Command::Install(args) => install(args),
         Command::Uninstall(args) => uninstall(args),
+        Command::Update(_) => unreachable!("update command is handled by app"),
     }
 }
 
@@ -900,7 +901,7 @@ mod tests {
     #[test]
     fn partial_signature_is_not_removed_as_full_block() {
         let contents =
-            "# me-managed: shell=zsh login=full interactive=compact version=v0.3.1\nme --compact\n";
+            "# me-managed: shell=zsh login=full interactive=compact version=v0.3.2\nme --compact\n";
 
         let (updated, removed) = remove_full_blocks(contents);
 
@@ -925,7 +926,7 @@ mod tests {
         let bashrc = dir.path().join(".bashrc");
         fs::write(
             &bashrc,
-            "# >>> me install >>>\n# me-managed: shell=bash login=full interactive=none version=v0.3.1\nme\n# <<< me install <<<\n",
+            "# >>> me install >>>\n# me-managed: shell=bash login=full interactive=none version=v0.3.2\nme\n# <<< me install <<<\n",
         )
         .unwrap();
 

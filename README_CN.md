@@ -80,6 +80,7 @@ context:    rust 1.94.1 · git(main)
 - Swift
 - R
 - C#
+- Docker Compose
 
 多个项目信号可以同时存在，但默认输出会保持克制而安静。
 
@@ -99,6 +100,12 @@ JSON：
 me --json
 ```
 
+检查更新：
+
+```bash
+me update --check
+```
+
 ## Shell 集成
 
 把 `me` 接入当前 shell：
@@ -111,6 +118,12 @@ me install
 
 ```bash
 me uninstall
+```
+
+更新 `me` 本身：
+
+```bash
+me update
 ```
 
 一个很小的工具，但在日常 shell 工作里会意外地好用。

@@ -42,7 +42,9 @@ fn man_page_documents_core_usage() {
     assert!(man_page.contains("\\-\\-json"));
     assert!(man_page.contains("me install"));
     assert!(man_page.contains("me uninstall"));
+    assert!(man_page.contains("me update"));
     assert!(man_page.contains("\\-\\-yes"));
+    assert!(man_page.contains("\\-\\-check"));
     assert!(man_page.contains("-h"));
 }
 
@@ -325,7 +327,7 @@ fn install_non_interactive_writes_managed_block() {
     let contents = fs::read_to_string(&target).unwrap();
     assert_eq!(contents.matches("# >>> me install >>>").count(), 1);
     assert!(
-        contents.contains("# me-managed: shell=zsh login=full interactive=compact version=v0.3.1")
+        contents.contains("# me-managed: shell=zsh login=full interactive=compact version=v0.3.2")
     );
     assert!(contents.contains("me\n"));
     assert!(contents.contains("me --compact"));
@@ -388,7 +390,7 @@ fn uninstall_non_interactive_global_requires_yes() {
     let zshrc = home.path().join(".zshrc");
     fs::write(
         &zshrc,
-        "# >>> me install >>>\n# me-managed: shell=zsh login=none interactive=compact version=v0.3.1\nme --compact\n# <<< me install <<<\n",
+        "# >>> me install >>>\n# me-managed: shell=zsh login=none interactive=compact version=v0.3.2\nme --compact\n# <<< me install <<<\n",
     )
     .unwrap();
 
@@ -415,12 +417,12 @@ fn uninstall_non_interactive_yes_removes_all_managed_blocks() {
     let bashrc = home.path().join(".bashrc");
     fs::write(
         &zshrc,
-        "# >>> me install >>>\n# me-managed: shell=zsh login=none interactive=compact version=v0.3.1\nme --compact\n# <<< me install <<<\n",
+        "# >>> me install >>>\n# me-managed: shell=zsh login=none interactive=compact version=v0.3.2\nme --compact\n# <<< me install <<<\n",
     )
     .unwrap();
     fs::write(
         &bashrc,
-        "# >>> me install >>>\n# me-managed: shell=bash login=none interactive=compact version=v0.3.1\nme --compact\n# <<< me install <<<\n",
+        "# >>> me install >>>\n# me-managed: shell=bash login=none interactive=compact version=v0.3.2\nme --compact\n# <<< me install <<<\n",
     )
     .unwrap();
 
@@ -478,7 +480,7 @@ fn uninstall_does_not_remove_partial_or_unmanaged_me_snippets() {
     let target = dir.path().join(".zshrc");
     fs::write(
         &target,
-        "# me-managed: shell=zsh login=full interactive=compact version=v0.3.1\nme --compact\n",
+        "# me-managed: shell=zsh login=full interactive=compact version=v0.3.2\nme --compact\n",
     )
     .unwrap();
 
@@ -534,7 +536,7 @@ fn install_non_interactive_warns_about_other_shell_integrations() {
     let bashrc = home.path().join(".bashrc");
     fs::write(
         &bashrc,
-        "# >>> me install >>>\n# me-managed: shell=bash login=full interactive=none version=v0.3.1\nme\n# <<< me install <<<\n",
+        "# >>> me install >>>\n# me-managed: shell=bash login=full interactive=none version=v0.3.2\nme\n# <<< me install <<<\n",
     )
     .unwrap();
 
@@ -598,4 +600,93 @@ fn home_directory_still_shows_project_context_when_detected() {
         .success()
         .stdout(predicate::str::contains(" · node"))
         .stdout(predicate::str::contains(" · local · "));
+}
+
+#[test]
+fn update_check_reports_current_and_latest_versions() {
+    Command::cargo_bin("me")
+        .unwrap()
+        .args(["update", "--check"])
+        .env("ME_UPDATE_LATEST_VERSION", "9.9.9")
+        .env("ME_UPDATE_SOURCE", "unknown")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(format!(
+            "current: {}",
+            env!("CARGO_PKG_VERSION")
+        )))
+        .stdout(predicate::str::contains("latest: 9.9.9"))
+        .stdout(predicate::str::contains("install source: unknown"))
+        .stdout(predicate::str::contains("update available"));
+}
+
+#[test]
+fn update_interactive_shows_versions_before_prompting() {
+    Command::cargo_bin("me")
+        .unwrap()
+        .arg("update")
+        .env("ME_UPDATE_LATEST_VERSION", "9.9.9")
+        .env("ME_UPDATE_SOURCE", "unknown")
+        .write_stdin("n\n")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(format!(
+            "current: {}",
+            env!("CARGO_PKG_VERSION")
+        )))
+        .stdout(predicate::str::contains("latest: 9.9.9"))
+        .stdout(predicate::str::contains("Upgrade now? [Y/n]"))
+        .stdout(predicate::str::contains("aborted"));
+}
+
+#[test]
+fn update_non_interactive_unknown_source_fails_safely() {
+    Command::cargo_bin("me")
+        .unwrap()
+        .args(["update", "--non-interactive"])
+        .env("ME_UPDATE_LATEST_VERSION", "9.9.9")
+        .env("ME_UPDATE_SOURCE", "unknown")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "unsupported or unknown install source",
+        ));
+}
+
+#[test]
+fn update_non_interactive_homebrew_path_can_be_dry_run() {
+    Command::cargo_bin("me")
+        .unwrap()
+        .args(["update", "--non-interactive"])
+        .env("ME_UPDATE_LATEST_VERSION", "9.9.9")
+        .env("ME_UPDATE_SOURCE", "homebrew")
+        .env("ME_UPDATE_DRY_RUN", "1")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("install source: Homebrew"))
+        .stdout(predicate::str::contains("would run: brew update"))
+        .stdout(predicate::str::contains("would run: brew upgrade me"));
+}
+
+#[test]
+fn update_non_interactive_release_binary_replaces_target_safely() {
+    let dir = tempdir().unwrap();
+    let current = dir.path().join(if cfg!(windows) { "me.exe" } else { "me" });
+    let artifact = dir.path().join("replacement");
+    fs::write(&current, "old").unwrap();
+    fs::write(&artifact, "new").unwrap();
+
+    Command::cargo_bin("me")
+        .unwrap()
+        .args(["update", "--non-interactive"])
+        .env("ME_UPDATE_LATEST_VERSION", "9.9.9")
+        .env("ME_UPDATE_SOURCE", "release")
+        .env("ME_UPDATE_EXE", &current)
+        .env("ME_UPDATE_RELEASE_ARTIFACT", &artifact)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("install source: release binary"))
+        .stdout(predicate::str::contains("updated release binary"));
+
+    assert_eq!(fs::read_to_string(&current).unwrap(), "new");
 }

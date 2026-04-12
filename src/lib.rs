@@ -8,4 +8,5 @@ pub mod model;
 pub mod output;
 pub mod providers;
 pub mod shell_integration;
+pub mod update;
 pub mod util;

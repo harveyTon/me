@@ -105,6 +105,9 @@ fn project_group_text(info: &MeInfo, style: ContextTextStyle) -> Option<String> 
 }
 
 fn project_text(project: &ProjectContext, style: ContextDisplayStyle) -> String {
+    if project.kind == "docker compose" {
+        return compose_text(project, style);
+    }
     let mut value = match &project.version {
         Some(version) => format!("{} {version}", project.kind),
         None => project.kind.clone(),
@@ -114,6 +117,34 @@ fn project_text(project: &ProjectContext, style: ContextDisplayStyle) -> String 
         value.push_str(&format!(" ({})", details.join(", ")));
     }
     value
+}
+
+fn compose_text(project: &ProjectContext, style: ContextDisplayStyle) -> String {
+    if style == ContextDisplayStyle::Compact {
+        if let Some(name) = &project.project_name {
+            return format!("docker-compose:{name}");
+        }
+        if let Some(count) = project.service_count {
+            return format!("docker-compose:{count}");
+        }
+        return "docker-compose".into();
+    }
+
+    let mut details = Vec::new();
+    if let Some(name) = &project.project_name {
+        details.push(name.clone());
+    }
+    if let Some(count) = project.service_count {
+        details.push(format!(
+            "{count} {}",
+            if count == 1 { "service" } else { "services" }
+        ));
+    }
+    if details.is_empty() {
+        "docker compose".into()
+    } else {
+        format!("docker compose ({})", details.join(", "))
+    }
 }
 
 fn project_text_items(projects: &[ProjectContext], style: ContextDisplayStyle) -> Vec<String> {

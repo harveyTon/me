@@ -56,6 +56,8 @@ fn sample_info() -> MeInfo {
             projects: vec![ProjectContext {
                 kind: "rust".into(),
                 version: Some("1.0".into()),
+                project_name: None,
+                service_count: None,
                 details: Vec::new(),
             }],
             git: Some(GitContext {
@@ -268,6 +270,8 @@ fn json_project_omits_version_when_absent() {
     info.context.projects = vec![ProjectContext {
         kind: "rust".into(),
         version: None,
+        project_name: None,
+        service_count: None,
         details: Vec::new(),
     }];
     let rendered = render_json(&info, &[Field::Context]).unwrap();
@@ -346,6 +350,8 @@ fn block_shows_both_projects_and_git() {
     info.context.projects.push(ProjectContext {
         kind: "python".into(),
         version: Some("3.12".into()),
+        project_name: None,
+        service_count: None,
         details: vec![".venv".into()],
     });
     let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
@@ -359,21 +365,29 @@ fn block_folds_project_related_items_after_three_entries() {
         ProjectContext {
             kind: "node".into(),
             version: Some("22.0.0".into()),
+            project_name: None,
+            service_count: None,
             details: vec!["pnpm".into(), "turbo".into()],
         },
         ProjectContext {
             kind: "python".into(),
             version: Some("3.12".into()),
+            project_name: None,
+            service_count: None,
             details: vec![".venv".into()],
         },
         ProjectContext {
             kind: "go".into(),
             version: Some("1.24.0".into()),
+            project_name: None,
+            service_count: None,
             details: Vec::new(),
         },
         ProjectContext {
             kind: "java".into(),
             version: Some("21".into()),
+            project_name: None,
+            service_count: None,
             details: vec!["gradle".into()],
         },
     ];
@@ -391,11 +405,15 @@ fn block_shows_exactly_three_context_items_without_folding() {
         ProjectContext {
             kind: "node".into(),
             version: Some("22.0.0".into()),
+            project_name: None,
+            service_count: None,
             details: vec!["pnpm".into(), "turbo".into()],
         },
         ProjectContext {
             kind: "python".into(),
             version: Some("3.12".into()),
+            project_name: None,
+            service_count: None,
             details: vec![".venv".into()],
         },
     ];
@@ -418,11 +436,15 @@ fn compact_shows_multiple_project_related_items_in_priority_order() {
         ProjectContext {
             kind: "python".into(),
             version: Some("3.12".into()),
+            project_name: None,
+            service_count: None,
             details: vec![".venv".into()],
         },
         ProjectContext {
             kind: "node".into(),
             version: Some("22.0.0".into()),
+            project_name: None,
+            service_count: None,
             details: vec!["pnpm".into(), "turbo".into()],
         },
     ];
@@ -439,21 +461,29 @@ fn compact_folds_context_items_after_three_entries() {
         ProjectContext {
             kind: "node".into(),
             version: Some("22.0.0".into()),
+            project_name: None,
+            service_count: None,
             details: vec!["pnpm".into(), "turbo".into(), "nx".into()],
         },
         ProjectContext {
             kind: "python".into(),
             version: Some("3.12".into()),
+            project_name: None,
+            service_count: None,
             details: vec![".venv".into()],
         },
         ProjectContext {
             kind: "go".into(),
             version: Some("1.24.0".into()),
+            project_name: None,
+            service_count: None,
             details: Vec::new(),
         },
         ProjectContext {
             kind: "java".into(),
             version: Some("21".into()),
+            project_name: None,
+            service_count: None,
             details: vec!["gradle".into()],
         },
     ];
@@ -477,11 +507,15 @@ fn compact_shows_exactly_three_context_items_without_folding() {
         ProjectContext {
             kind: "node".into(),
             version: Some("22.0.0".into()),
+            project_name: None,
+            service_count: None,
             details: vec!["pnpm".into(), "turbo".into(), "nx".into()],
         },
         ProjectContext {
             kind: "python".into(),
             version: Some("3.12".into()),
+            project_name: None,
+            service_count: None,
             details: vec![".venv".into()],
         },
     ];
@@ -503,6 +537,8 @@ fn node_version_display_is_plain_across_outputs() {
     info.context.projects = vec![ProjectContext {
         kind: "node".into(),
         version: Some("20.19.6".into()),
+        project_name: None,
+        service_count: None,
         details: vec!["pnpm".into(), "turbo".into()],
     }];
     info.context.git = Some(GitContext {
@@ -529,6 +565,8 @@ fn node_text_output_limits_enhancements_to_two_items() {
     info.context.projects = vec![ProjectContext {
         kind: "node".into(),
         version: Some("24.14.1".into()),
+        project_name: None,
+        service_count: None,
         details: vec![
             "pnpm".into(),
             "turbo".into(),
@@ -554,6 +592,8 @@ fn git_branch_is_not_truncated_in_text_output() {
     info.context.projects = vec![ProjectContext {
         kind: "python".into(),
         version: Some("3.12".into()),
+        project_name: None,
+        service_count: None,
         details: vec![".venv".into()],
     }];
     info.context.git = Some(GitContext {
@@ -578,11 +618,15 @@ fn shared_text_context_semantics_stay_consistent() {
         ProjectContext {
             kind: "node".into(),
             version: Some("20.19.6".into()),
+            project_name: None,
+            service_count: None,
             details: vec!["pnpm".into()],
         },
         ProjectContext {
             kind: "python".into(),
             version: Some("3.12".into()),
+            project_name: None,
+            service_count: None,
             details: vec![".venv".into()],
         },
     ];
@@ -617,24 +661,104 @@ fn network_output_remains_unchanged_with_dense_context() {
         ProjectContext {
             kind: "node".into(),
             version: Some("22.0.0".into()),
+            project_name: None,
+            service_count: None,
             details: vec!["pnpm".into(), "turbo".into(), "nx".into()],
         },
         ProjectContext {
             kind: "python".into(),
             version: Some("3.12".into()),
+            project_name: None,
+            service_count: None,
             details: vec![".venv".into()],
         },
         ProjectContext {
             kind: "go".into(),
             version: Some("1.24.0".into()),
+            project_name: None,
+            service_count: None,
             details: Vec::new(),
         },
         ProjectContext {
             kind: "java".into(),
             version: Some("21".into()),
+            project_name: None,
+            service_count: None,
             details: vec!["gradle".into()],
         },
     ];
     let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
     assert!(rendered.contains("network:    192.168.1.10 (+2)"));
+}
+
+#[test]
+fn block_output_formats_docker_compose_project_summary() {
+    let mut info = sample_info();
+    info.context.projects = vec![
+        ProjectContext {
+            kind: "node".into(),
+            version: Some("24.14.1".into()),
+            project_name: None,
+            service_count: None,
+            details: vec!["pnpm".into()],
+        },
+        ProjectContext {
+            kind: "docker compose".into(),
+            version: None,
+            project_name: Some("myapp".into()),
+            service_count: Some(6),
+            details: Vec::new(),
+        },
+    ];
+
+    let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
+
+    assert!(rendered.contains(
+        "context:    docker, node 24.14.1 (pnpm) · docker compose (myapp, 6 services) · git(main)"
+    ));
+}
+
+#[test]
+fn compact_output_formats_docker_compose_project_summary() {
+    let mut info = sample_info();
+    info.context.projects = vec![
+        ProjectContext {
+            kind: "node".into(),
+            version: Some("24.14.1".into()),
+            project_name: None,
+            service_count: None,
+            details: vec!["pnpm".into()],
+        },
+        ProjectContext {
+            kind: "docker compose".into(),
+            version: None,
+            project_name: Some("myapp".into()),
+            service_count: Some(6),
+            details: Vec::new(),
+        },
+    ];
+
+    let rendered = render_compact(&info, &Field::defaults());
+
+    assert!(rendered.contains(
+        "tiger@MacBook · docker · node 24.14.1 (pnpm) · docker-compose:myapp · git:main · me\n"
+    ));
+}
+
+#[test]
+fn json_output_preserves_docker_compose_project_fields() {
+    let mut info = sample_info();
+    info.context.projects = vec![ProjectContext {
+        kind: "docker compose".into(),
+        version: None,
+        project_name: Some("myapp".into()),
+        service_count: Some(6),
+        details: Vec::new(),
+    }];
+
+    let rendered = render_json(&info, &[Field::Context]).unwrap();
+
+    assert!(rendered.contains("\"kind\": \"docker compose\""));
+    assert!(rendered.contains("\"project_name\": \"myapp\""));
+    assert!(rendered.contains("\"service_count\": 6"));
 }

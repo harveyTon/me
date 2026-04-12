@@ -10,6 +10,9 @@ me \- a modern, context-aware replacement for whoami
 .br
 .B me uninstall
 [\fIOPTIONS\fR]
+.br
+.B me update
+[\fIOPTIONS\fR]
 .SH DESCRIPTION
 .B me
 prints local identity and session context in a compact, human-readable form.
@@ -97,6 +100,11 @@ Install shell integration for login or interactive shell startup.
 .B uninstall
 Remove managed shell integration blocks previously installed by
 .BR "me install" .
+.TP
+.B update
+Check for or apply an update for the
+.B me
+binary.
 .SH INSTALL OPTIONS
 .TP
 .B \-\-non-interactive
@@ -154,6 +162,13 @@ and
 .TP
 .B \-\-file \fIPATH\fR
 Override the target shell config file.
+.SH UPDATE OPTIONS
+.TP
+.B \-\-check
+Check for an available update without upgrading.
+.TP
+.B \-\-non-interactive
+Run update without prompts.
 .SH EXAMPLES
 .TP
 .B me
@@ -176,12 +191,15 @@ Start the interactive shell integration setup.
 .TP
 .B me uninstall
 Start the interactive shell integration removal flow.
+.TP
+.B me update \-\-check
+Check whether a newer release is available.
 .SH CONTEXT
 .B me
 detects a small set of local context signals: SSH sessions, Docker/container
 environments, common project types such as Rust, Node, Python, Go, Java,
-Ruby, C/C++, PHP, Lua, Swift, R, and C#, and Git branches when the current
-directory is inside a Git work tree.
+Ruby, C/C++, PHP, Lua, Swift, R, C#, and Docker Compose, and Git branches
+when the current directory is inside a Git work tree.
 .PP
 Context is summarized quietly in the default block output.
 .SH NOTES

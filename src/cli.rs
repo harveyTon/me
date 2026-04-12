@@ -84,6 +84,8 @@ pub enum Command {
     Install(InstallArgs),
     #[command(about = "Remove shell integration")]
     Uninstall(UninstallArgs),
+    #[command(about = "Update me itself")]
+    Update(UpdateArgs),
 }
 
 #[derive(Debug, Clone, clap::Args)]
@@ -114,6 +116,16 @@ pub struct UninstallArgs {
     pub shell: Option<Shell>,
     #[arg(long, value_name = "PATH", help = "Override target shell config file")]
     pub file: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, clap::Args)]
+pub struct UpdateArgs {
+    #[arg(long = "help", action = clap::ArgAction::Help, help = "Print help")]
+    pub help: Option<bool>,
+    #[arg(long, help = "Check for an update without upgrading")]
+    pub check: bool,
+    #[arg(long, help = "Run update without interactive prompts")]
+    pub non_interactive: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]

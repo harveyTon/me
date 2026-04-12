@@ -139,6 +139,10 @@ pub struct ProjectContext {
     pub kind: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service_count: Option<usize>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub details: Vec<String>,
 }

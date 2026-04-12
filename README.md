@@ -163,6 +163,7 @@ user@dev-machine · local · rust 1.94.1 · git:main · me
 me
 me --compact
 me --json
+me update --check
 me --help
 ```
 
@@ -234,7 +235,7 @@ me --json
 
 - SSH sessions
 - Docker/container environments
-- project context for Rust, Node, Python, Go, Java, Ruby, C/C++, PHP, Lua, Swift, R, and C#
+- project context for Rust, Node, Python, Go, Java, Ruby, C/C++, PHP, Lua, Swift, R, C#, and Docker Compose
 - Git branches when the current directory is inside a Git work tree
 
 Multiple project signals can coexist, but default output stays bounded and quiet.
@@ -258,6 +259,12 @@ Remove it later:
 
 ```bash
 me uninstall
+```
+
+Update `me` itself:
+
+```bash
+me update
 ```
 
 ## Configuration
