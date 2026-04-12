@@ -1,5 +1,17 @@
 # Release Notes
 
+## v0.3.4
+
+Focused reliability and release-hygiene hardening.
+
+### Highlights
+
+- Added SHA256 verification for release-binary self-update before replacement.
+- Made shell integration writes atomic, with rollback on failure and optional backup support in the write path.
+- Hardened config loading with a size limit and shorter user-facing fallback warnings.
+- Kept network collection failure silent while adding separate IPv4 and IPv6 collection and display.
+- Added lightweight version consistency checks to the release validation flow.
+
 ## v0.3.3
 
 Release-prep alignment for the current `me` CLI surface.

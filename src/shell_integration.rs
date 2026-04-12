@@ -1008,7 +1008,7 @@ mod tests {
     #[test]
     fn partial_signature_is_not_removed_as_full_block() {
         let contents =
-            "# me-managed: shell=zsh login=full interactive=compact version=v0.3.3\nme --compact\n";
+            "# me-managed: shell=zsh login=full interactive=compact version=v0.3.4\nme --compact\n";
 
         let (updated, removed) = remove_full_blocks(contents);
 
@@ -1033,7 +1033,7 @@ mod tests {
         let bashrc = dir.path().join(".bashrc");
         fs::write(
             &bashrc,
-            "# >>> me install >>>\n# me-managed: shell=bash login=full interactive=none version=v0.3.3\nme\n# <<< me install <<<\n",
+            "# >>> me install >>>\n# me-managed: shell=bash login=full interactive=none version=v0.3.4\nme\n# <<< me install <<<\n",
         )
         .unwrap();
 

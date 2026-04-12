@@ -336,7 +336,7 @@ fn install_non_interactive_writes_managed_block() {
     let contents = fs::read_to_string(&target).unwrap();
     assert_eq!(contents.matches("# >>> me install >>>").count(), 1);
     assert!(
-        contents.contains("# me-managed: shell=zsh login=full interactive=compact version=v0.3.3")
+        contents.contains("# me-managed: shell=zsh login=full interactive=compact version=v0.3.4")
     );
     assert!(contents.contains("me\n"));
     assert!(contents.contains("me --compact"));
@@ -399,7 +399,7 @@ fn uninstall_non_interactive_global_requires_yes() {
     let zshrc = home.path().join(".zshrc");
     fs::write(
         &zshrc,
-        "# >>> me install >>>\n# me-managed: shell=zsh login=none interactive=compact version=v0.3.3\nme --compact\n# <<< me install <<<\n",
+        "# >>> me install >>>\n# me-managed: shell=zsh login=none interactive=compact version=v0.3.4\nme --compact\n# <<< me install <<<\n",
     )
     .unwrap();
 
@@ -426,12 +426,12 @@ fn uninstall_non_interactive_yes_removes_all_managed_blocks() {
     let bashrc = home.path().join(".bashrc");
     fs::write(
         &zshrc,
-        "# >>> me install >>>\n# me-managed: shell=zsh login=none interactive=compact version=v0.3.3\nme --compact\n# <<< me install <<<\n",
+        "# >>> me install >>>\n# me-managed: shell=zsh login=none interactive=compact version=v0.3.4\nme --compact\n# <<< me install <<<\n",
     )
     .unwrap();
     fs::write(
         &bashrc,
-        "# >>> me install >>>\n# me-managed: shell=bash login=none interactive=compact version=v0.3.3\nme --compact\n# <<< me install <<<\n",
+        "# >>> me install >>>\n# me-managed: shell=bash login=none interactive=compact version=v0.3.4\nme --compact\n# <<< me install <<<\n",
     )
     .unwrap();
 
@@ -489,7 +489,7 @@ fn uninstall_does_not_remove_partial_or_unmanaged_me_snippets() {
     let target = dir.path().join(".zshrc");
     fs::write(
         &target,
-        "# me-managed: shell=zsh login=full interactive=compact version=v0.3.3\nme --compact\n",
+        "# me-managed: shell=zsh login=full interactive=compact version=v0.3.4\nme --compact\n",
     )
     .unwrap();
 
@@ -545,7 +545,7 @@ fn install_non_interactive_warns_about_other_shell_integrations() {
     let bashrc = home.path().join(".bashrc");
     fs::write(
         &bashrc,
-        "# >>> me install >>>\n# me-managed: shell=bash login=full interactive=none version=v0.3.3\nme\n# <<< me install <<<\n",
+        "# >>> me install >>>\n# me-managed: shell=bash login=full interactive=none version=v0.3.4\nme\n# <<< me install <<<\n",
     )
     .unwrap();
 
