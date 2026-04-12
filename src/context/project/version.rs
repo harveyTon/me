@@ -2,6 +2,11 @@ use std::path::Path;
 use std::process::Command;
 
 pub fn command_version(bin: &str, arg: &str) -> Option<String> {
+    #[cfg(test)]
+    if let Some(mocked) = mocked_version(bin) {
+        return Some(mocked);
+    }
+
     if !Path::new(bin).exists() && which::which(bin).is_err() {
         return None;
     }
@@ -18,6 +23,11 @@ pub fn command_version(bin: &str, arg: &str) -> Option<String> {
 }
 
 pub fn command_version_any(bin: &str, args: &[&str]) -> Option<String> {
+    #[cfg(test)]
+    if let Some(mocked) = mocked_version(bin) {
+        return Some(mocked);
+    }
+
     if !Path::new(bin).exists() && which::which(bin).is_err() {
         return None;
     }
@@ -60,6 +70,23 @@ fn normalize_version_token(part: &str) -> Option<String> {
         }
     }
     None
+}
+
+#[cfg(test)]
+fn mocked_version(bin: &str) -> Option<String> {
+    let key = format!(
+        "ME_TEST_VERSION_{}",
+        bin.chars()
+            .map(|ch| {
+                if ch.is_ascii_alphanumeric() {
+                    ch.to_ascii_uppercase()
+                } else {
+                    '_'
+                }
+            })
+            .collect::<String>()
+    );
+    std::env::var(key).ok().map(|value| extract_version(&value))
 }
 
 #[cfg(test)]

@@ -118,7 +118,6 @@ fn detail_priority(detail: &str) -> usize {
 mod tests {
     use super::detect_in;
     use std::fs;
-    use std::path::{Path, PathBuf};
     use std::sync::Mutex;
     use tempfile::tempdir;
 
@@ -132,18 +131,11 @@ mod tests {
             "[package]\nname = \"demo\"\n",
         )
         .unwrap();
-        let bin_dir = temp.path().join("bin");
-        write_fake_command(&bin_dir, "rustc", "rustc 1.94.1 (abc123 2026-03-25)");
 
-        let _guard = ENV_LOCK.lock().unwrap();
-        let previous_path = std::env::var_os("PATH");
-        unsafe {
-            std::env::set_var("PATH", prefixed_path(&bin_dir, previous_path.as_deref()));
-        }
-
-        let detected = detect_in(temp.path(), false);
-
-        restore_path(previous_path);
+        let _guard = lock_env();
+        let detected = with_mocked_version("rustc", "rustc 1.94.1 (abc123 2026-03-25)", || {
+            detect_in(temp.path(), false)
+        });
 
         assert_eq!(detected.len(), 1);
         assert_eq!(detected[0].kind, "rust");
@@ -172,18 +164,9 @@ mod tests {
         fs::write(temp.path().join("package.json"), "{ \"name\": \"demo\" }\n").unwrap();
         fs::write(temp.path().join("pnpm-lock.yaml"), "lockfileVersion: 9\n").unwrap();
         fs::write(temp.path().join("turbo.json"), "{}\n").unwrap();
-        let bin_dir = temp.path().join("bin");
-        write_fake_command(&bin_dir, "node", "v20.19.6");
 
-        let _guard = ENV_LOCK.lock().unwrap();
-        let previous_path = std::env::var_os("PATH");
-        unsafe {
-            std::env::set_var("PATH", prefixed_path(&bin_dir, previous_path.as_deref()));
-        }
-
-        let detected = detect_in(temp.path(), false);
-
-        restore_path(previous_path);
+        let _guard = lock_env();
+        let detected = with_mocked_version("node", "v20.19.6", || detect_in(temp.path(), false));
 
         assert_eq!(detected.len(), 1);
         assert_eq!(detected[0].kind, "node");
@@ -280,40 +263,38 @@ mod tests {
         assert_eq!(detected[0].kind, "c/cpp");
     }
 
-    fn prefixed_path(bin_dir: &Path, existing: Option<&std::ffi::OsStr>) -> std::ffi::OsString {
-        let mut paths = vec![PathBuf::from(bin_dir)];
-        if let Some(existing) = existing {
-            paths.extend(std::env::split_paths(existing));
-        }
-        std::env::join_paths(paths).unwrap()
+    fn lock_env() -> std::sync::MutexGuard<'static, ()> {
+        ENV_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
-    fn restore_path(previous_path: Option<std::ffi::OsString>) {
-        match previous_path {
-            Some(path) => unsafe {
-                std::env::set_var("PATH", path);
+    fn with_mocked_version<T>(bin: &str, value: &str, run: impl FnOnce() -> T) -> T {
+        let key = format!(
+            "ME_TEST_VERSION_{}",
+            bin.chars()
+                .map(|ch| {
+                    if ch.is_ascii_alphanumeric() {
+                        ch.to_ascii_uppercase()
+                    } else {
+                        '_'
+                    }
+                })
+                .collect::<String>()
+        );
+        let previous = std::env::var_os(&key);
+        unsafe {
+            std::env::set_var(&key, value);
+        }
+        let result = run();
+        match previous {
+            Some(previous) => unsafe {
+                std::env::set_var(&key, previous);
             },
             None => unsafe {
-                std::env::remove_var("PATH");
+                std::env::remove_var(&key);
             },
         }
-    }
-
-    fn write_fake_command(bin_dir: &Path, name: &str, output: &str) {
-        fs::create_dir_all(bin_dir).unwrap();
-        if cfg!(windows) {
-            let path = bin_dir.join(format!("{name}.cmd"));
-            fs::write(&path, format!("@echo {output}\r\n")).unwrap();
-        } else {
-            let path = bin_dir.join(name);
-            fs::write(&path, format!("#!/bin/sh\necho '{output}'\n")).unwrap();
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::PermissionsExt;
-                let mut perms = fs::metadata(&path).unwrap().permissions();
-                perms.set_mode(0o755);
-                fs::set_permissions(&path, perms).unwrap();
-            }
-        }
+        result
     }
 }
