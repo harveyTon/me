@@ -3,31 +3,37 @@ use std::path::{Path, PathBuf};
 
 const MAX_DEPTH: usize = 8;
 
-pub fn detect() -> Option<GitContext> {
+pub fn detect(fast: bool) -> Option<GitContext> {
     let cwd = std::env::current_dir().ok()?;
-    detect_from(&cwd)
+    detect_from(&cwd, fast)
 }
 
-pub fn detect_fast() -> Option<GitContext> {
-    let cwd = std::env::current_dir().ok()?;
-    detect_fast_from(&cwd)
-}
-
-fn detect_from(start: &Path) -> Option<GitContext> {
-    let git_dir = find_git_dir(start)?;
-    let head = std::fs::read_to_string(git_dir.join("HEAD")).ok()?;
-    let branch = resolved_ref(&git_dir, head.trim())?;
+fn detect_from(start: &Path, fast: bool) -> Option<GitContext> {
+    let repository = find_repository(start)?;
+    let head = read_head(&repository.git_dir)?;
+    let branch = resolve_head(&repository.git_dir, &head, fast)?;
     Some(GitContext { branch })
 }
 
-fn detect_fast_from(start: &Path) -> Option<GitContext> {
-    let git_dir = find_git_dir(start)?;
-    let head = std::fs::read_to_string(git_dir.join("HEAD")).ok()?;
-    let branch = head_name_fast(head.trim())?;
-    Some(GitContext { branch })
+struct Repository {
+    git_dir: PathBuf,
 }
 
-fn resolved_ref(git_dir: &Path, head: &str) -> Option<String> {
+fn read_head(git_dir: &Path) -> Option<String> {
+    std::fs::read_to_string(git_dir.join("HEAD"))
+        .ok()
+        .map(|head| head.trim().to_owned())
+}
+
+fn resolve_head(git_dir: &Path, head: &str, fast: bool) -> Option<String> {
+    if fast {
+        resolve_fast_head(head)
+    } else {
+        resolve_normal_head(git_dir, head)
+    }
+}
+
+fn resolve_normal_head(git_dir: &Path, head: &str) -> Option<String> {
     if let Some(branch) = head
         .strip_prefix("ref: refs/heads/")
         .map(str::to_owned)
@@ -47,7 +53,7 @@ fn resolved_ref(git_dir: &Path, head: &str) -> Option<String> {
     tag_for_oid(git_dir, head)
 }
 
-fn head_name_fast(head: &str) -> Option<String> {
+fn resolve_fast_head(head: &str) -> Option<String> {
     if let Some(branch) = head
         .strip_prefix("ref: refs/heads/")
         .map(str::to_owned)
@@ -132,23 +138,12 @@ fn packed_tag_for_oid(path: &Path, oid: &str) -> Option<String> {
     None
 }
 
-fn find_git_dir(start: &Path) -> Option<PathBuf> {
+fn find_repository(start: &Path) -> Option<Repository> {
     let home = dirs::home_dir();
     let mut dir = start;
     for _ in 0..MAX_DEPTH {
-        let git = dir.join(".git");
-        if git.exists() {
-            if git.is_dir() {
-                return Some(git);
-            }
-            if let Ok(content) = std::fs::read_to_string(&git) {
-                let gitdir = content.trim().strip_prefix("gitdir: ")?;
-                let resolved = dir.join(gitdir);
-                if resolved.join("HEAD").exists() {
-                    return Some(resolved);
-                }
-            }
-            return None;
+        if let Some(repository) = repository_at(dir) {
+            return Some(repository);
         }
         if home.as_ref().is_some_and(|h| dir == h) {
             return None;
@@ -156,6 +151,24 @@ fn find_git_dir(start: &Path) -> Option<PathBuf> {
         dir = dir.parent()?;
     }
     None
+}
+
+fn repository_at(dir: &Path) -> Option<Repository> {
+    let git = dir.join(".git");
+    if !git.exists() {
+        return None;
+    }
+    if git.is_dir() {
+        return Some(Repository { git_dir: git });
+    }
+    resolve_git_file(dir, &git).map(|git_dir| Repository { git_dir })
+}
+
+fn resolve_git_file(dir: &Path, git_file: &Path) -> Option<PathBuf> {
+    let content = std::fs::read_to_string(git_file).ok()?;
+    let gitdir = content.trim().strip_prefix("gitdir: ")?;
+    let resolved = dir.join(gitdir);
+    resolved.join("HEAD").exists().then_some(resolved)
 }
 
 #[cfg(test)]
@@ -171,7 +184,7 @@ mod tests {
         fs::create_dir_all(&git).unwrap();
         fs::write(git.join("HEAD"), "ref: refs/heads/main\n").unwrap();
 
-        let detected = detect_from(temp.path()).unwrap();
+        let detected = detect_from(temp.path(), false).unwrap();
 
         assert_eq!(detected.branch, "main");
     }
@@ -193,7 +206,7 @@ mod tests {
         )
         .unwrap();
 
-        let detected = detect_from(temp.path()).unwrap();
+        let detected = detect_from(temp.path(), false).unwrap();
 
         assert_eq!(detected.branch, "n8n@2.2.4");
     }
@@ -214,7 +227,7 @@ mod tests {
         )
         .unwrap();
 
-        let detected = detect_from(temp.path()).unwrap();
+        let detected = detect_from(temp.path(), false).unwrap();
 
         assert_eq!(detected.branch, "n8n@2.2.4");
     }
@@ -229,7 +242,7 @@ mod tests {
         fs::write(git.join("refs/heads/main"), "deadbeef\n").unwrap();
         fs::write(git.join("refs/tags/v2.2.4"), "deadbeef\n").unwrap();
 
-        let detected = detect_from(temp.path()).unwrap();
+        let detected = detect_from(temp.path(), false).unwrap();
 
         assert_eq!(detected.branch, "main");
     }
@@ -242,7 +255,7 @@ mod tests {
         fs::write(git.join("HEAD"), "ref: refs/tags/v2.2.4\n").unwrap();
         fs::write(git.join("refs/tags/v2.2.4"), "deadbeef\n").unwrap();
 
-        let detected = detect_from(temp.path()).unwrap();
+        let detected = detect_from(temp.path(), false).unwrap();
 
         assert_eq!(detected.branch, "v2.2.4");
     }
@@ -258,7 +271,7 @@ mod tests {
         )
         .unwrap();
 
-        assert!(detect_from(temp.path()).is_none());
+        assert!(detect_from(temp.path(), false).is_none());
     }
 
     #[test]
@@ -278,7 +291,7 @@ mod tests {
         )
         .unwrap();
 
-        let detected = detect_fast_from(temp.path()).unwrap();
+        let detected = detect_from(temp.path(), true).unwrap();
 
         assert_eq!(detected.branch, "1234567890ab");
     }

@@ -6,25 +6,21 @@ pub mod ssh;
 use crate::{config::ContextConfig, model::ContextInfo};
 
 pub fn detect(config: &ContextConfig) -> ContextInfo {
-    if !config.enabled {
-        return ContextInfo::default();
-    }
-    ContextInfo {
-        ssh: config.ssh.then(ssh::detect).flatten(),
-        container: config.container.then(container::detect).flatten(),
-        project: config.project.then(project::detect).flatten(),
-        git: config.git.then(git::detect).flatten(),
-    }
+    detect_with(config, false)
 }
 
 pub fn detect_fast(config: &ContextConfig) -> ContextInfo {
+    detect_with(config, true)
+}
+
+fn detect_with(config: &ContextConfig, fast: bool) -> ContextInfo {
     if !config.enabled {
         return ContextInfo::default();
     }
     ContextInfo {
         ssh: config.ssh.then(ssh::detect).flatten(),
         container: config.container.then(container::detect).flatten(),
-        project: config.project.then(project::detect_fast).flatten(),
-        git: config.git.then(git::detect_fast).flatten(),
+        project: config.project.then(|| project::detect(fast)).flatten(),
+        git: config.git.then(|| git::detect(fast)).flatten(),
     }
 }

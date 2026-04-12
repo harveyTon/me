@@ -1,8 +1,31 @@
 use crate::model::{Field, MeInfo};
-use crate::output::config_fmt::display_host;
+use crate::output::semantics::display_host;
 use serde_json::{Map, Value, json};
 
 pub fn render_json(info: &MeInfo, fields: &[Field]) -> anyhow::Result<String> {
+    let out = object_for(info, fields);
+    Ok(format!(
+        "{}\n",
+        serde_json::to_string_pretty(&Value::Object(out))?
+    ))
+}
+
+pub fn render_json_line(info: &MeInfo, fields: &[Field]) -> anyhow::Result<String> {
+    let out = object_for(info, fields);
+    Ok(format!("{}\n", serde_json::to_string(&Value::Object(out))?))
+}
+
+fn insert(out: &mut Map<String, Value>, key: &str, value: Value) {
+    out.insert(key.to_owned(), value);
+}
+
+fn insert_optional(out: &mut Map<String, Value>, key: &str, value: Option<&String>) {
+    if let Some(value) = value {
+        insert(out, key, json!(value));
+    }
+}
+
+fn object_for(info: &MeInfo, fields: &[Field]) -> Map<String, Value> {
     let mut out = Map::new();
     for field in fields {
         match field {
@@ -35,20 +58,7 @@ pub fn render_json(info: &MeInfo, fields: &[Field]) -> anyhow::Result<String> {
             }
         }
     }
-    Ok(format!(
-        "{}\n",
-        serde_json::to_string_pretty(&Value::Object(out))?
-    ))
-}
-
-fn insert(out: &mut Map<String, Value>, key: &str, value: Value) {
-    out.insert(key.to_owned(), value);
-}
-
-fn insert_optional(out: &mut Map<String, Value>, key: &str, value: Option<&String>) {
-    if let Some(value) = value {
-        insert(out, key, json!(value));
-    }
+    out
 }
 
 fn context_json(info: &MeInfo) -> Option<Value> {

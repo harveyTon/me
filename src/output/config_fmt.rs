@@ -1,6 +1,9 @@
 use crate::{
     model::{Field, MeInfo},
-    output::RenderOptions,
+    output::{
+        RenderOptions,
+        semantics::{ContextTextStyle, compact_list, context_text, display_host},
+    },
 };
 
 pub fn render_config(info: &MeInfo, fields: &[Field], _options: &RenderOptions) -> String {
@@ -18,7 +21,7 @@ pub(crate) fn value_for(info: &MeInfo, field: Field) -> Option<String> {
         Field::User => Some(info.identity.user.clone()),
         Field::Uid => Some(info.identity.uid.to_string()),
         Field::Gid => Some(info.identity.gid.to_string()),
-        Field::Groups => Some(compact_list(&info.identity.groups, 3)).filter(|s| !s.is_empty()),
+        Field::Groups => compact_list(&info.identity.groups, 3),
         Field::Host => Some(display_host(&info.identity.host)),
         Field::Shell => info.runtime.shell.clone(),
         Field::Pid => Some(info.runtime.pid.to_string()),
@@ -27,41 +30,10 @@ pub(crate) fn value_for(info: &MeInfo, field: Field) -> Option<String> {
         Field::Privilege => Some(info.privilege.clone()),
         Field::Sudo => Some(if info.sudo { "yes" } else { "no" }.into()),
         Field::Ssh => Some(if info.ssh { "yes" } else { "no" }.into()),
-        Field::Network => Some(compact_list(&info.network.local_ips, 1)).filter(|s| !s.is_empty()),
+        Field::Network => compact_list(&info.network.local_ips, 1),
         Field::Pwd => info.pwd.as_ref().map(|pwd| pwd.display.clone()),
-        Field::Context => context_value(info),
+        Field::Context => context_text(info, ContextTextStyle::Config),
     }
-}
-
-pub(crate) fn display_host(host: &str) -> String {
-    host.strip_suffix(".local").unwrap_or(host).to_owned()
-}
-
-pub(crate) fn compact_list(values: &[String], keep: usize) -> String {
-    if values.len() <= keep {
-        return values.join(", ");
-    }
-    format!("{} (+{})", values[..keep].join(", "), values.len() - keep)
-}
-
-fn context_value(info: &MeInfo) -> Option<String> {
-    let mut parts = Vec::new();
-    if let Some(container) = &info.context.container {
-        parts.push(match &container.id {
-            Some(id) => format!("{}:{id}", container.kind),
-            None => container.kind.clone(),
-        });
-    }
-    if let Some(project) = &info.context.project {
-        parts.push(match &project.version {
-            Some(version) => format!("{} {version}", project.kind),
-            None => project.kind.clone(),
-        });
-    }
-    if let Some(git) = &info.context.git {
-        parts.push(format!("git:{}", git.branch));
-    }
-    Some(parts.join(", ")).filter(|s| !s.is_empty())
 }
 
 fn finish(lines: Vec<String>) -> String {

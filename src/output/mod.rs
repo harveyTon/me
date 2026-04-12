@@ -2,6 +2,7 @@ pub mod block;
 pub mod compact;
 pub mod config_fmt;
 pub mod json;
+pub mod semantics;
 
 use crate::config::IconMode;
 

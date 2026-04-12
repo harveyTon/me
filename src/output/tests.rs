@@ -422,6 +422,30 @@ fn node_version_display_is_plain_across_outputs() {
 }
 
 #[test]
+fn shared_text_context_semantics_stay_consistent() {
+    let mut info = sample_info();
+    info.context.container = Some(ContainerContext {
+        kind: "container".into(),
+        id: Some("abcdef123456".into()),
+    });
+    info.context.project = Some(ProjectContext {
+        kind: "node".into(),
+        version: Some("20.19.6".into()),
+    });
+    info.context.git = Some(GitContext {
+        branch: "feature/login".into(),
+    });
+
+    let block = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
+    let compact = render_compact(&info, &Field::defaults());
+    let config = render_config(&info, &[Field::Context], &RenderOptions::plain_for_tests());
+
+    assert!(block.contains("context:    container, node 20.19.6 · git(feature/login)"));
+    assert!(compact.contains(" · container · node 20.19.6 git:feature/login · me"));
+    assert!(config.contains("context = container:abcdef123456, node 20.19.6, git:feature/login"));
+}
+
+#[test]
 fn compact_shows_git_only_when_no_project() {
     let mut info = sample_info();
     info.context.project = None;

@@ -3,7 +3,8 @@ use crate::{
     model::{Field, MeInfo},
     output::{
         RenderOptions,
-        config_fmt::{compact_list, display_host, value_for},
+        config_fmt::value_for,
+        semantics::{ContextTextStyle, compact_list, context_text, display_host},
     },
 };
 use owo_colors::OwoColorize;
@@ -70,7 +71,7 @@ pub fn render_block(info: &MeInfo, fields: &[Field], options: &RenderOptions) ->
     }
 
     if fields.contains(&Field::Context)
-        && let Some(context) = context_summary(info)
+        && let Some(context) = context_text(info, ContextTextStyle::Block)
     {
         if !out.is_empty() {
             out.push('\n');
@@ -115,14 +116,18 @@ fn row(info: &MeInfo, field: Field, options: &RenderOptions) -> Option<Row> {
         Field::Network if options.full => multiline_row("network", &info.network.local_ips),
         Field::Groups => Some(Row {
             key: "groups",
-            value: compact_list(&info.identity.groups, 3),
+            value: compact_list(&info.identity.groups, 3)?,
             add_gap_before: false,
             add_gap_after: false,
         })
         .filter(|row| !row.value.is_empty()),
         Field::Network => Some(Row {
             key: "network",
-            value: prefixed_value(options, "network", compact_list(&info.network.local_ips, 1)),
+            value: prefixed_value(
+                options,
+                "network",
+                compact_list(&info.network.local_ips, 1)?,
+            ),
             add_gap_before: false,
             add_gap_after: false,
         })
@@ -164,27 +169,6 @@ fn multiline_row(key: &'static str, values: &[String]) -> Option<Row> {
         add_gap_before: false,
         add_gap_after: false,
     })
-}
-
-fn context_summary(info: &MeInfo) -> Option<String> {
-    let mut parts = Vec::new();
-    if let Some(container) = &info.context.container {
-        parts.push(container.kind.clone());
-    }
-    let mut project_parts = Vec::new();
-    if let Some(project) = &info.context.project {
-        project_parts.push(match &project.version {
-            Some(version) => format!("{} {version}", project.kind),
-            None => project.kind.clone(),
-        });
-    }
-    if let Some(git) = &info.context.git {
-        project_parts.push(format!("git({})", git.branch));
-    }
-    if !project_parts.is_empty() {
-        parts.push(project_parts.join(" · "));
-    }
-    Some(parts.join(", ")).filter(|summary| !summary.is_empty())
 }
 
 fn prefixed_value(options: &RenderOptions, icon: &str, value: String) -> String {

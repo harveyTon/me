@@ -97,43 +97,7 @@ impl Default for WatchConfig {
 impl Config {
     pub fn load() -> (Self, Option<String>) {
         let (mut config, warning) = Self::load_from_path(config_path());
-
-        if let Ok(view) = env::var("ME_VIEW") {
-            config.view = match view.as_str() {
-                "compact" => View::Compact,
-                "block" => View::Block,
-                _ => config.view,
-            };
-        }
-        if let Ok(icons) = env::var("ME_ICONS") {
-            config.icons = match icons.as_str() {
-                "on" => IconMode::On,
-                "off" => IconMode::Off,
-                "auto" => IconMode::Auto,
-                _ => config.icons,
-            };
-        }
-        if let Ok(color) = env::var("ME_COLOR") {
-            config.color = match color.as_str() {
-                "on" => ColorMode::On,
-                "off" => ColorMode::Off,
-                "auto" => ColorMode::Auto,
-                _ => config.color,
-            };
-        }
-        if let Ok(mode) = env::var("ME_PLAIN_MODE") {
-            config.plain_mode = match mode.as_str() {
-                "user" => PlainMode::User,
-                "user_host" => PlainMode::UserHost,
-                _ => config.plain_mode,
-            };
-        }
-        if let Some(interval) = env::var("ME_WATCH_INTERVAL")
-            .ok()
-            .and_then(|v| v.parse().ok())
-        {
-            config.watch.interval = interval;
-        }
+        apply_env_overrides(&mut config);
         (config, warning)
     }
 
@@ -178,6 +142,58 @@ impl Config {
     }
 }
 
+fn apply_env_overrides(config: &mut Config) {
+    apply_override("ME_VIEW", &mut config.view, parse_view);
+    apply_override("ME_ICONS", &mut config.icons, parse_icon_mode);
+    apply_override("ME_COLOR", &mut config.color, parse_color_mode);
+    apply_override("ME_PLAIN_MODE", &mut config.plain_mode, parse_plain_mode);
+    apply_override("ME_WATCH_INTERVAL", &mut config.watch.interval, |raw| {
+        raw.parse().ok()
+    });
+}
+
+fn apply_override<T>(key: &str, slot: &mut T, parse: impl FnOnce(&str) -> Option<T>) {
+    if let Ok(raw) = env::var(key)
+        && let Some(value) = parse(&raw)
+    {
+        *slot = value;
+    }
+}
+
+fn parse_view(raw: &str) -> Option<View> {
+    match raw {
+        "compact" => Some(View::Compact),
+        "block" => Some(View::Block),
+        _ => None,
+    }
+}
+
+fn parse_icon_mode(raw: &str) -> Option<IconMode> {
+    match raw {
+        "on" => Some(IconMode::On),
+        "off" => Some(IconMode::Off),
+        "auto" => Some(IconMode::Auto),
+        _ => None,
+    }
+}
+
+fn parse_color_mode(raw: &str) -> Option<ColorMode> {
+    match raw {
+        "on" => Some(ColorMode::On),
+        "off" => Some(ColorMode::Off),
+        "auto" => Some(ColorMode::Auto),
+        _ => None,
+    }
+}
+
+fn parse_plain_mode(raw: &str) -> Option<PlainMode> {
+    match raw {
+        "user" => Some(PlainMode::User),
+        "user_host" => Some(PlainMode::UserHost),
+        _ => None,
+    }
+}
+
 fn config_path() -> Option<PathBuf> {
     dirs::home_dir().map(|home| home.join(".config/me/config.yaml"))
 }
@@ -216,7 +232,10 @@ plain_mode: user_host
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
     use tempfile::tempdir;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn load_creates_default_config_when_missing() {
@@ -281,5 +300,34 @@ mod tests {
 
         assert!(warning.is_none());
         assert_eq!(config.color, ColorMode::Auto);
+    }
+
+    #[test]
+    fn env_overrides_apply_valid_values_only() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let mut config = Config::default();
+        unsafe {
+            env::set_var("ME_VIEW", "compact");
+            env::set_var("ME_COLOR", "off");
+            env::set_var("ME_WATCH_INTERVAL", "5");
+            env::set_var("ME_PLAIN_MODE", "user");
+            env::set_var("ME_ICONS", "invalid");
+        }
+
+        apply_env_overrides(&mut config);
+
+        unsafe {
+            env::remove_var("ME_VIEW");
+            env::remove_var("ME_COLOR");
+            env::remove_var("ME_WATCH_INTERVAL");
+            env::remove_var("ME_PLAIN_MODE");
+            env::remove_var("ME_ICONS");
+        }
+
+        assert_eq!(config.view, View::Compact);
+        assert_eq!(config.color, ColorMode::Off);
+        assert_eq!(config.watch.interval, 5);
+        assert_eq!(config.plain_mode, PlainMode::User);
+        assert_eq!(config.icons, IconMode::Auto);
     }
 }

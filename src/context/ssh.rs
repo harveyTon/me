@@ -10,30 +10,43 @@ fn detect_with(
     ancestors: impl Fn() -> Option<Vec<String>>,
     env: impl Fn(&str) -> Option<String>,
 ) -> Option<SshContext> {
-    if let Some(value) = env("SSH_CONNECTION")
+    direct_env_clue(&env).or_else(|| sudo_ancestor_clue(&ancestors, &env))
+}
+
+fn direct_env_clue(env: &impl Fn(&str) -> Option<String>) -> Option<SshContext> {
+    ssh_env_value(env).map(|value| SshContext {
+        remote: true,
+        connection: Some(value),
+    })
+}
+
+fn sudo_ancestor_clue(
+    ancestors: &impl Fn() -> Option<Vec<String>>,
+    env: &impl Fn(&str) -> Option<String>,
+) -> Option<SshContext> {
+    sudo_context(env)
+        .filter(|enabled| *enabled)
+        .and_then(|_| ancestor_ssh_clue(ancestors))
+}
+
+fn ssh_env_value(env: &impl Fn(&str) -> Option<String>) -> Option<String> {
+    env("SSH_CONNECTION")
         .or_else(|| env("SSH_CLIENT"))
         .or_else(|| env("SSH_TTY"))
-    {
-        return Some(SshContext {
-            remote: true,
-            connection: Some(value),
-        });
-    }
+}
 
-    let sudo_context = env("SUDO_USER").is_some() || env("SUDO_UID").is_some();
-    if sudo_context
-        && ancestors()
-            .unwrap_or_default()
-            .iter()
-            .any(|name| is_sshd_command(name))
-    {
-        return Some(SshContext {
+fn sudo_context(env: &impl Fn(&str) -> Option<String>) -> Option<bool> {
+    Some(env("SUDO_USER").is_some() || env("SUDO_UID").is_some())
+}
+
+fn ancestor_ssh_clue(ancestors: &impl Fn() -> Option<Vec<String>>) -> Option<SshContext> {
+    ancestors()?
+        .iter()
+        .any(|name| is_sshd_command(name))
+        .then_some(SshContext {
             remote: true,
             connection: None,
-        });
-    }
-
-    None
+        })
 }
 
 fn is_sshd_command(name: &str) -> bool {

@@ -1,6 +1,12 @@
 use crate::{
     model::{Field, MeInfo},
-    output::config_fmt::{display_host, value_for},
+    output::{
+        config_fmt::value_for,
+        semantics::{
+            ContextTextStyle, compact_cwd_name, compact_env_label, context_text, display_host,
+            display_user,
+        },
+    },
 };
 
 pub fn render_compact(info: &MeInfo, fields: &[Field]) -> String {
@@ -26,11 +32,11 @@ pub fn render_compact(info: &MeInfo, fields: &[Field]) -> String {
         }
     } else {
         parts.push(compact_identity(info));
-        parts.push(compact_env(info).to_owned());
-        if let Some(project) = compact_project(info) {
+        parts.push(compact_env_label(info));
+        if let Some(project) = context_text(info, ContextTextStyle::Compact) {
             parts.push(project);
         }
-        if let Some(cwd) = compact_cwd(info) {
+        if let Some(cwd) = compact_cwd_name(info) {
             parts.push(cwd);
         }
     }
@@ -39,42 +45,9 @@ pub fn render_compact(info: &MeInfo, fields: &[Field]) -> String {
 }
 
 fn compact_identity(info: &MeInfo) -> String {
-    let user = if info.identity.uid == 0 {
-        "root"
-    } else {
-        &info.identity.user
-    };
-    format!("{}@{}", user, display_host(&info.identity.host))
-}
-
-fn compact_env(info: &MeInfo) -> String {
-    if info.ssh {
-        "ssh".into()
-    } else if let Some(container) = &info.context.container {
-        container.kind.clone()
-    } else {
-        "local".into()
-    }
-}
-
-fn compact_project(info: &MeInfo) -> Option<String> {
-    let mut parts = Vec::new();
-    if let Some(project) = &info.context.project {
-        parts.push(match &project.version {
-            Some(version) => format!("{} {version}", project.kind),
-            None => project.kind.clone(),
-        });
-    }
-    if let Some(git) = &info.context.git {
-        parts.push(format!("git:{}", git.branch));
-    }
-    Some(parts.join(" ")).filter(|s| !s.is_empty())
-}
-
-fn compact_cwd(info: &MeInfo) -> Option<String> {
-    let raw = info.pwd.as_ref()?.raw.as_str();
-    std::path::Path::new(raw)
-        .file_name()
-        .map(|name| name.to_string_lossy().into_owned())
-        .filter(|name| !name.is_empty())
+    format!(
+        "{}@{}",
+        display_user(info),
+        display_host(&info.identity.host)
+    )
 }

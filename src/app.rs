@@ -2,8 +2,12 @@ use crate::{
     cli::{Cli, OutputFormat},
     config::{Config, PlainMode, View},
     model::{Field, MeInfo},
-    output::{RenderOptions, render_block, render_compact, render_config, render_json},
+    output::{
+        RenderOptions, render_block, render_compact, render_config, render_json,
+        semantics::display_host,
+    },
 };
+use std::io::{self, Write};
 
 #[derive(Debug, Clone, Copy)]
 pub enum AppMode {
@@ -21,19 +25,10 @@ pub fn run() -> anyhow::Result<()> {
     }
     let selected_fields = cli.selected_fields();
     let explicit_network = selected_fields.contains(&Field::Network);
-    let fields = fields(selected_fields, &config);
+    let fields = resolve_fields(selected_fields, &config);
     let collect_network = should_collect_network(cli.fast, explicit_network);
-    let options = RenderOptions {
-        color: crate::util::color::should_color(cli.no_color, config.color),
-        icons: if cli.no_color {
-            crate::config::IconMode::Off
-        } else {
-            config.icons
-        },
-        full: cli.full,
-        light_theme: config.is_light_theme(),
-    };
-    let mode = mode(&cli, &config);
+    let options = resolve_render_options(&cli, &config);
+    let mode = resolve_mode(&cli, &config);
 
     if cli.watch {
         return crate::interactive::watch::run(
@@ -41,7 +36,7 @@ pub fn run() -> anyhow::Result<()> {
             &fields,
             mode,
             options,
-            cli.interval.unwrap_or(config.watch.interval),
+            watch_interval(&cli, &config),
             cli.fast,
             collect_network,
         );
@@ -52,10 +47,10 @@ pub fn run() -> anyhow::Result<()> {
         return crate::interactive::copy::run(&info, target);
     }
     if cli.plain {
-        print!("{}", plain(&info, config.plain_mode));
+        write_stdout(&plain(&info, config.plain_mode))?;
         return Ok(());
     }
-    print!("{}", render(&info, &fields, mode, &options)?);
+    write_stdout(&render(&info, &fields, mode, &options)?)?;
     Ok(())
 }
 
@@ -73,7 +68,7 @@ pub fn render(
     }
 }
 
-fn fields(selected: Vec<Field>, config: &Config) -> Vec<Field> {
+fn resolve_fields(selected: Vec<Field>, config: &Config) -> Vec<Field> {
     if !selected.is_empty() {
         selected
     } else if !config.fields.is_empty() {
@@ -87,7 +82,7 @@ pub(crate) fn should_collect_network(_fast: bool, _explicit_network: bool) -> bo
     true
 }
 
-fn mode(cli: &Cli, config: &Config) -> AppMode {
+fn resolve_mode(cli: &Cli, config: &Config) -> AppMode {
     if cli.json {
         AppMode::Json
     } else if cli.format == OutputFormat::Config {
@@ -99,15 +94,39 @@ fn mode(cli: &Cli, config: &Config) -> AppMode {
     }
 }
 
+fn resolve_render_options(cli: &Cli, config: &Config) -> RenderOptions {
+    RenderOptions {
+        color: crate::util::color::should_color(cli.no_color, config.color),
+        icons: if cli.no_color {
+            crate::config::IconMode::Off
+        } else {
+            config.icons
+        },
+        full: cli.full,
+        light_theme: config.is_light_theme(),
+    }
+}
+
+fn watch_interval(cli: &Cli, config: &Config) -> u64 {
+    cli.interval.unwrap_or(config.watch.interval)
+}
+
 fn plain(info: &MeInfo, mode: PlainMode) -> String {
     match mode {
         PlainMode::User => format!("{}\n", info.identity.user),
         PlainMode::UserHost => format!(
             "{}@{}\n",
             info.identity.user,
-            crate::output::config_fmt::display_host(&info.identity.host)
+            display_host(&info.identity.host)
         ),
     }
+}
+
+fn write_stdout(value: &str) -> anyhow::Result<()> {
+    let mut stdout = io::stdout();
+    stdout.write_all(value.as_bytes())?;
+    stdout.flush()?;
+    Ok(())
 }
 
 #[cfg(test)]

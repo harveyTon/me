@@ -26,13 +26,34 @@ pub fn run(
 
     while running.load(Ordering::SeqCst) {
         let info = crate::providers::collect(&config.context, fast, collect_network);
-        print!(
-            "\x1b[2J\x1b[H{}",
-            crate::app::render(&info, fields, mode, &options)?
-        );
-        io::stdout().flush()?;
+        write_frame(&info, fields, mode, &options)?;
         thread::sleep(Duration::from_secs(interval.max(1)));
     }
-    println!();
+    if !matches!(mode, AppMode::Json) {
+        writeln!(io::stdout())?;
+        io::stdout().flush()?;
+    }
+    Ok(())
+}
+
+fn write_frame(
+    info: &crate::model::MeInfo,
+    fields: &[crate::model::Field],
+    mode: AppMode,
+    options: &RenderOptions,
+) -> anyhow::Result<()> {
+    let mut stdout = io::stdout();
+    match mode {
+        AppMode::Json => {
+            let line = crate::output::json::render_json_line(info, fields)?;
+            stdout.write_all(line.as_bytes())?;
+        }
+        _ => {
+            let rendered = crate::app::render(info, fields, mode, options)?;
+            stdout.write_all(b"\x1b[2J\x1b[H")?;
+            stdout.write_all(rendered.as_bytes())?;
+        }
+    }
+    stdout.flush()?;
     Ok(())
 }

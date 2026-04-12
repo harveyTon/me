@@ -1,6 +1,12 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
-use std::fs;
+use std::{
+    fs,
+    io::{BufRead, BufReader},
+    process::Stdio,
+    thread,
+    time::{Duration, Instant},
+};
 use tempfile::tempdir;
 
 #[test]
@@ -146,4 +152,109 @@ fn fast_git_context_uses_short_oid_for_detached_head() {
         .success()
         .stdout(predicate::str::contains("git(1234567890ab)"))
         .stdout(predicate::str::contains("git(n8n@2.2.4)").not());
+}
+
+#[test]
+fn json_project_version_is_present_without_fast_and_omitted_with_fast() {
+    let repo = tempdir().unwrap();
+    let home = tempdir().unwrap();
+    fs::write(
+        repo.path().join("Cargo.toml"),
+        "[package]\nname = \"demo\"\nversion = \"0.1.0\"\n",
+    )
+    .unwrap();
+
+    Command::cargo_bin("me")
+        .unwrap()
+        .arg("--json")
+        .current_dir(repo.path())
+        .env("HOME", home.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"project\""))
+        .stdout(predicate::str::contains("\"kind\": \"rust\""))
+        .stdout(predicate::str::contains("\"version\":"));
+
+    Command::cargo_bin("me")
+        .unwrap()
+        .args(["--fast", "--json"])
+        .current_dir(repo.path())
+        .env("HOME", home.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"project\""))
+        .stdout(predicate::str::contains("\"kind\": \"rust\""))
+        .stdout(predicate::str::contains("\"version\"").not());
+}
+
+#[test]
+fn json_snapshot_mode_outputs_one_valid_json_object() {
+    let output = Command::cargo_bin("me")
+        .unwrap()
+        .arg("--json")
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    serde_json::from_str::<serde_json::Value>(&stdout).unwrap();
+}
+
+#[test]
+fn watch_json_outputs_ndjson_lines_without_ansi() {
+    let home = tempdir().unwrap();
+    let mut child = std::process::Command::new(Command::cargo_bin("me").unwrap().get_program())
+        .args(["--watch", "--json", "--interval", "1"])
+        .env("HOME", home.path())
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+
+    let stdout = child.stdout.take().unwrap();
+    let mut reader = BufReader::new(stdout);
+    let mut lines = Vec::new();
+
+    for _ in 0..2 {
+        let mut line = String::new();
+        reader.read_line(&mut line).unwrap();
+        lines.push(line);
+    }
+
+    let _ = child.kill();
+    let _ = child.wait();
+
+    assert_eq!(lines.len(), 2);
+    for line in lines {
+        assert!(!line.contains('\u{1b}'));
+        serde_json::from_str::<serde_json::Value>(line.trim_end()).unwrap();
+    }
+}
+
+#[test]
+fn watch_json_exits_cleanly_when_pipe_closes() {
+    let home = tempdir().unwrap();
+    let mut child = std::process::Command::new(Command::cargo_bin("me").unwrap().get_program())
+        .args(["--watch", "--json", "--interval", "1"])
+        .env("HOME", home.path())
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+
+    let mut reader = BufReader::new(child.stdout.take().unwrap());
+    let mut first_line = String::new();
+    reader.read_line(&mut first_line).unwrap();
+    drop(reader);
+
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        if let Some(status) = child.try_wait().unwrap() {
+            assert!(status.success());
+            break;
+        }
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            panic!("watch json process did not exit after pipe closed");
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
 }
