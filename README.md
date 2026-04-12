@@ -9,18 +9,31 @@ A better `whoami`, with context.
 ## Quick Example
 
 ```txt
-user@dev-machine  zsh
+identity:
+  user:   user
+  host:   dev-machine
+  shell:  zsh
 
-uid:        501
-gid:        20
-groups:     staff, admin, _developer (+2)
-privilege:  user
-ssh:        no
-network:    192.168.0.10 (+2)
+system:
+  uid:     501
+  gid:     20
+  groups:  staff, admin, _developer (+2)
+  pid:     24811
+  ppid:    24803
+  tty:     ttys001
 
-pwd:        /Users/user/dev/me
+session:
+  privilege:  user
+  sudo:       no
+  ssh:        no
 
-context:    rust 1.94.1 · git(main)
+network:
+  ipv4:  192.168.0.10 (+2)
+  ipv6:  fd12::10 (+1)
+
+location:
+  pwd:      /Users/user/dev/me
+  context:  rust 1.94.1 · git(main)
 ```
 
 ## Installation
@@ -89,43 +102,59 @@ The goal stays narrow: identity first, context second, location included, with n
 ### SSH Session
 
 ```txt
-user@server-01  bash
+identity:
+  user:   user
+  host:   server-01
+  shell:  bash
 
-uid:        1000
-gid:        1000
-groups:     user, deploy
-pid:        24811
-ppid:       24803
-tty:        pts/0
-privilege:  user
-sudo:       no
-ssh:        yes
-network:    10.0.0.5
+system:
+  uid:     1000
+  gid:     1000
+  groups:  user, deploy
+  pid:     24811
+  ppid:    24803
+  tty:     pts/0
 
-pwd:        /srv/app
+session:
+  privilege:  user
+  sudo:       no
+  ssh:        yes
 
-context:    rust 1.94.1 · git(main)
+network:
+  ipv4:  10.0.0.5
+
+location:
+  pwd:      /srv/app
+  context:  rust 1.94.1 · git(main)
 ```
 
 ### sudo
 
 ```txt
-root@server-01  bash
+identity:
+  user:   root
+  host:   server-01
+  shell:  bash
 
-uid:        0
-gid:        0
-groups:     root
-pid:        24902
-ppid:       24890
-tty:        pts/0
-privilege:  root
-sudo:       yes
-ssh:        yes
-network:    10.0.0.5
+system:
+  uid:     0
+  gid:     0
+  groups:  root
+  pid:     24902
+  ppid:    24890
+  tty:     pts/0
 
-pwd:        /srv/app
+session:
+  privilege:  root
+  sudo:       yes
+  ssh:        yes
 
-context:    rust 1.94.1 · git(main)
+network:
+  ipv4:  10.0.0.5
+
+location:
+  pwd:      /srv/app
+  context:  rust 1.94.1 · git(main)
 ```
 
 ### Compact Mode
@@ -242,7 +271,8 @@ Multiple project signals can coexist, but default output stays bounded and quiet
 Context stays a secondary signal in the default text output, even when several detectors match.
 
 ```txt
-context:    node 24.14.1 (pnpm, turbo) · python 3.12 (.venv) · git(main) (+1)
+location:
+  context:  node 24.14.1 (pnpm, turbo) · python 3.12 (.venv) · git(main) (+1)
 ```
 
 The default command stays local-first. It does not query cloud identity, inspect remote services, or perform public IP lookups.
@@ -276,6 +306,7 @@ Config file:
 ```
 
 `me` creates the default config on first run if it does not exist. If the file is invalid, `me` prints a warning and falls back to built-in defaults.
+If the file is too large, `me` also falls back to built-in defaults with a short warning.
 
 Minimal example:
 
@@ -323,9 +354,8 @@ See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for the detailed release proced
 
 ## Roadmap
 
-- Refine multi-project context density so the default text output stays quiet and useful.
+- Keep block, compact, JSON, and prompt-oriented output behavior stable.
 - Improve detector coverage where project signals remain strong, cheap, and local-first.
-- Continue stabilizing block, compact, JSON, and prompt-oriented output behavior.
 - Keep startup time predictable for prompt usage, especially in `--fast` mode.
 - Keep release artifacts, Homebrew distribution, and install paths aligned across platforms.
 
