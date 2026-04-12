@@ -51,10 +51,68 @@ fn man_page_documents_core_usage() {
 
 #[test]
 fn version_consistency_script_passes() {
-    std::process::Command::new("bash")
-        .arg("scripts/check-version-consistency.sh")
-        .assert()
-        .success();
+    #[cfg(not(windows))]
+    {
+        std::process::Command::new("bash")
+            .arg("scripts/check-version-consistency.sh")
+            .assert()
+            .success();
+    }
+
+    #[cfg(windows)]
+    {
+        assert_version_consistency_files();
+    }
+}
+
+#[cfg(windows)]
+fn assert_version_consistency_files() {
+    let version = package_version_from_manifest();
+    assert!(
+        !version.is_empty(),
+        "could not determine version from Cargo.toml"
+    );
+    assert!(
+        cargo_lock_has_package_version(&version),
+        "Cargo.lock is missing me {version}"
+    );
+
+    let shell_integration = fs::read_to_string("src/shell_integration.rs").unwrap();
+    assert!(shell_integration.contains("env!(\"CARGO_PKG_VERSION\")"));
+
+    let release_notes = fs::read_to_string("RELEASE_NOTES.md").unwrap();
+    assert!(release_notes.contains(&format!("## v{version}")));
+}
+
+#[cfg(windows)]
+fn package_version_from_manifest() -> String {
+    fs::read_to_string("Cargo.toml")
+        .unwrap()
+        .lines()
+        .find_map(|line| {
+            line.strip_prefix("version = \"")
+                .and_then(|value| value.strip_suffix('\"'))
+                .map(str::to_owned)
+        })
+        .unwrap_or_default()
+}
+
+#[cfg(windows)]
+fn cargo_lock_has_package_version(version: &str) -> bool {
+    let cargo_lock = fs::read_to_string("Cargo.lock").unwrap();
+    let expected = format!("version = \"{version}\"");
+    let mut in_me_package = false;
+
+    for line in cargo_lock.lines() {
+        match line.trim() {
+            "[[package]]" => in_me_package = false,
+            "name = \"me\"" => in_me_package = true,
+            current if in_me_package && current == expected => return true,
+            _ => {}
+        }
+    }
+
+    false
 }
 
 #[test]

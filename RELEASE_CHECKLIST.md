@@ -13,11 +13,19 @@ VERSION="v$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)"
 - Confirm `Cargo.toml` has the intended version.
 - Confirm `README.md` examples match the current output.
 - Confirm `man/man1/me.1` documents the current CLI flags and project context summary.
-- Run:
+- Run `scripts/check-release.sh` before every release. This is required and includes:
+  - `cargo fmt --check`
+  - `cargo test --locked`
+  - `cargo clippy --locked --all-targets --all-features -- -D warnings`
+  - version consistency validation
+  - Windows target compilation checks for `x86_64-pc-windows-msvc` and `aarch64-pc-windows-msvc`
+- Command:
 
 ```bash
 scripts/check-release.sh
 ```
+
+- If you changed release scripts, version checks, or cross-platform tests, do not tag until the Windows target checks above pass locally.
 
 ## Create The Tag
 
@@ -60,6 +68,7 @@ Windows MSVC artifacts are built on Windows runners. macOS artifacts are built o
 ## GitHub Release
 
 - Confirm the `release.yml` workflow completed.
+- Confirm the Windows release jobs completed successfully before considering the release done.
 - Confirm all expected artifacts are attached to the GitHub release.
 - Confirm `SHA256SUMS.txt` is attached to the GitHub release.
 - Copy the relevant text from `RELEASE_NOTES.md` into the release description if needed.
