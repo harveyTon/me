@@ -2,7 +2,7 @@
 
 # me
 
-一个现代化的、上下文感知的 `whoami` 替代工具。
+一个更克制、也更好用的 `whoami` 替代工具。
 
 `me` 保持了 Unix 工具的风格：小巧、快速、本地优先、可脚本化。它添加了足够的结构信息来回答"我在这里是谁？"，而不会变成一个系统清单工具。
 
@@ -11,30 +11,37 @@
 ```txt
 user@dev-machine  zsh
 
-groups:     staff, admin, _developer (+3)
+uid:        501
+gid:        20
+groups:     staff, admin, _developer (+2)
 privilege:  user
 ssh:        no
 network:    192.168.0.10 (+2)
 
-context:    rust (1.94.0)
+pwd:        /Users/user/dev/me
+
+context:    rust (1.94.1) · git(main)
 ```
 
 ## 安装
 
-### macOS (Homebrew)
+### macOS (Homebrew，推荐)
 
 ```bash
 brew tap harveyTon/me
 brew install me
 ```
 
-### 下载二进制文件
-
-发布页面: [github.com/harveyTon/me/releases](https://github.com/harveyTon/me/releases)
+### macOS / Linux 一行安装
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh)
 ```
+
+### 下载二进制文件
+
+发布页面: [github.com/harveyTon/me/releases](https://github.com/harveyTon/me/releases)
+提供 macOS、Linux、Windows 的预编译压缩包。
 
 ### 从源码构建
 
@@ -66,20 +73,48 @@ $ whoami
 user
 ```
 
-`me` 保持了同样的简洁，但补充了我通常紧接着需要查看的信息:
+`me` 还是那个形状，但把我通常紧接着要看的东西一起打出来了:
 
 ```console
 $ me
 user@dev-machine  zsh
-...
+
+uid:        501
+gid:        20
+groups:     staff, admin, _developer (+2)
+privilege:  user
 ssh:        no
 network:    192.168.0.10 (+2)
-context:    rust (1.94.0)
+
+pwd:        /Users/user/dev/me
+
+context:    rust (1.94.1) · git(main)
 ```
 
-目标仍然是小巧和本地化：身份信息优先，上下文信息其次，不会演变成通用系统检测工具。
+目标还是很小：身份优先，上下文其次，再带一点位置感，但不会演变成通用系统信息工具。
 
 ## 示例
+
+### 本地项目
+
+```txt
+user@dev-machine  zsh
+
+uid:        501
+gid:        20
+groups:     staff, admin, _developer (+2)
+pid:        18420
+ppid:       18398
+tty:        ttys001
+privilege:  user
+sudo:       no
+ssh:        no
+network:    192.168.0.10 (+2)
+
+pwd:        /Users/user/dev/me
+
+context:    rust (1.94.1) · git(main)
+```
 
 ### SSH 会话
 
@@ -97,7 +132,9 @@ sudo:       no
 ssh:        yes
 network:    10.0.0.5
 
-context:    rust (1.94.0)
+pwd:        /srv/app
+
+context:    rust (1.94.1) · git(main)
 ```
 
 ### sudo
@@ -116,13 +153,39 @@ sudo:       yes
 ssh:        yes
 network:    10.0.0.5
 
-context:    rust (1.94.0)
+pwd:        /srv/app
+
+context:    rust (1.94.1) · git(main)
 ```
 
 ### 精简模式
 
 ```txt
-user@dev-machine · local · rust
+user@dev-machine · local · rust git:main · me
+```
+
+### JSON
+
+```json
+{
+  "user": "user",
+  "host": "dev-machine",
+  "privilege": "user",
+  "ssh": false,
+  "pwd": {
+    "raw": "/Users/user/dev/me",
+    "display": "/Users/user/dev/me"
+  },
+  "context": {
+    "project": {
+      "kind": "rust",
+      "version": "1.94.1"
+    },
+    "git": {
+      "branch": "main"
+    }
+  }
+}
 ```
 
 ## 使用方法
@@ -171,7 +234,7 @@ me --compact
 ```
 
 ```txt
-user@dev-machine · local · rust
+user@dev-machine · local · rust git:main · me
 ```
 
 ### JSON 模式
@@ -186,10 +249,13 @@ me --json
 {
   "user": "user",
   "host": "dev-machine",
-  "uid": 501,
-  "gid": 20,
+  "privilege": "user",
   "sudo": false,
-  "ssh": false
+  "ssh": false,
+  "pwd": {
+    "raw": "/Users/user/dev/me",
+    "display": "/Users/user/dev/me"
+  }
 }
 ```
 
@@ -206,7 +272,7 @@ me --json
 上下文作为辅助信号展示:
 
 ```txt
-context:    rust (1.94.0) · git(main)
+context:    rust (1.94.1) · git(main)
 ```
 
 默认命令保持本地优先。它不会查询云端身份、检查远程服务或执行公网 IP 查询。

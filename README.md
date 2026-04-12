@@ -2,7 +2,7 @@
 
 # me
 
-A modern, context-aware replacement for `whoami`.
+A calm, context-aware replacement for `whoami`.
 
 `me` keeps the Unix-tool shape: small, fast, local-first, and scriptable. It adds enough structure to answer "who am I here?" without becoming a system inventory tool.
 
@@ -11,30 +11,37 @@ A modern, context-aware replacement for `whoami`.
 ```txt
 user@dev-machine  zsh
 
-groups:     staff, admin, _developer (+3)
+uid:        501
+gid:        20
+groups:     staff, admin, _developer (+2)
 privilege:  user
 ssh:        no
 network:    192.168.0.10 (+2)
 
-context:    rust (1.94.0)
+pwd:        /Users/user/dev/me
+
+context:    rust (1.94.1) · git(main)
 ```
 
 ## Installation
 
-### macOS (Homebrew)
+### macOS (Homebrew, recommended)
 
 ```bash
 brew tap harveyTon/me
 brew install me
 ```
 
-### Download binary
-
-Releases: [github.com/harveyTon/me/releases](https://github.com/harveyTon/me/releases)
+### macOS / Linux (one-line install)
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/harveyTon/me/main/scripts/install.sh)
 ```
+
+### Download a release binary
+
+Releases: [github.com/harveyTon/me/releases](https://github.com/harveyTon/me/releases)
+Prebuilt archives are available for macOS, Linux, and Windows.
 
 ### From Source
 
@@ -66,20 +73,48 @@ $ whoami
 user
 ```
 
-`me` keeps that shape, but adds the bits I usually end up checking right after:
+`me` keeps that shape, but answers the follow-up questions I usually check right after:
 
 ```console
 $ me
 user@dev-machine  zsh
-...
+
+uid:        501
+gid:        20
+groups:     staff, admin, _developer (+2)
+privilege:  user
 ssh:        no
 network:    192.168.0.10 (+2)
-context:    rust (1.94.0)
+
+pwd:        /Users/user/dev/me
+
+context:    rust (1.94.1) · git(main)
 ```
 
-The goal is still small and local: identity first, context second, and no drift into a general system inspector.
+The goal stays narrow: identity first, context second, location included, and no drift into a general system inspector.
 
 ## Examples
+
+### Local project
+
+```txt
+user@dev-machine  zsh
+
+uid:        501
+gid:        20
+groups:     staff, admin, _developer (+2)
+pid:        18420
+ppid:       18398
+tty:        ttys001
+privilege:  user
+sudo:       no
+ssh:        no
+network:    192.168.0.10 (+2)
+
+pwd:        /Users/user/dev/me
+
+context:    rust (1.94.1) · git(main)
+```
 
 ### SSH Session
 
@@ -97,7 +132,9 @@ sudo:       no
 ssh:        yes
 network:    10.0.0.5
 
-context:    rust (1.94.0)
+pwd:        /srv/app
+
+context:    rust (1.94.1) · git(main)
 ```
 
 ### sudo
@@ -116,13 +153,39 @@ sudo:       yes
 ssh:        yes
 network:    10.0.0.5
 
-context:    rust (1.94.0)
+pwd:        /srv/app
+
+context:    rust (1.94.1) · git(main)
 ```
 
 ### Compact Mode
 
 ```txt
-user@dev-machine · local · rust
+user@dev-machine · local · rust git:main · me
+```
+
+### JSON
+
+```json
+{
+  "user": "user",
+  "host": "dev-machine",
+  "privilege": "user",
+  "ssh": false,
+  "pwd": {
+    "raw": "/Users/user/dev/me",
+    "display": "/Users/user/dev/me"
+  },
+  "context": {
+    "project": {
+      "kind": "rust",
+      "version": "1.94.1"
+    },
+    "git": {
+      "branch": "main"
+    }
+  }
+}
 ```
 
 ## Usage
@@ -171,7 +234,7 @@ me --compact
 ```
 
 ```txt
-user@dev-machine · local · rust
+user@dev-machine · local · rust git:main · me
 ```
 
 ### JSON
@@ -186,10 +249,13 @@ me --json
 {
   "user": "user",
   "host": "dev-machine",
-  "uid": 501,
-  "gid": 20,
+  "privilege": "user",
   "sudo": false,
-  "ssh": false
+  "ssh": false,
+  "pwd": {
+    "raw": "/Users/user/dev/me",
+    "display": "/Users/user/dev/me"
+  }
 }
 ```
 
@@ -206,7 +272,7 @@ me --json
 Context is summarized as a secondary signal:
 
 ```txt
-context:    rust (1.94.0) · git(main)
+context:    rust (1.94.1) · git(main)
 ```
 
 The default command stays local-first. It does not query cloud identity, inspect remote services, or perform public IP lookups.
