@@ -177,7 +177,8 @@ fn selector_does_not_leak_project_context() {
         .assert()
         .success()
         .stdout(predicate::str::contains("network:\n"))
-        .stdout(predicate::str::contains("summary:"))
+        .stdout(predicate::str::contains("ipv4:").or(predicate::str::contains("ipv6:")))
+        .stdout(predicate::str::contains("summary:").not())
         .stdout(predicate::str::contains("--- context ---").not())
         .stdout(predicate::str::contains("project:").not());
 }
@@ -227,6 +228,8 @@ fn fast_block_output_keeps_same_group_structure() {
         .stdout(predicate::str::contains("\nsystem:\n"))
         .stdout(predicate::str::contains("\nsession:\n"))
         .stdout(predicate::str::contains("\nnetwork:\n"))
+        .stdout(predicate::str::contains("ipv4:").or(predicate::str::contains("ipv6:")))
+        .stdout(predicate::str::contains("summary:").not())
         .stdout(predicate::str::contains("\nlocation:\n"));
 }
 
@@ -241,6 +244,7 @@ fn full_block_output_keeps_same_group_structure() {
         .stdout(predicate::str::contains("\nsystem:\n"))
         .stdout(predicate::str::contains("\nsession:\n"))
         .stdout(predicate::str::contains("\nnetwork:\n"))
+        .stdout(predicate::str::contains("  ipv4:\n").or(predicate::str::contains("  ipv6:\n")))
         .stdout(predicate::str::contains("\nlocation:\n"));
 }
 

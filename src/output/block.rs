@@ -3,7 +3,7 @@ use crate::{
     output::{
         RenderOptions,
         config_fmt::value_for,
-        semantics::{ContextTextStyle, compact_list, context_text, network_lines, network_summary},
+        semantics::{ContextTextStyle, compact_list, context_text, network_lines},
     },
 };
 use owo_colors::OwoColorize;
@@ -123,13 +123,21 @@ fn network_group(info: &MeInfo, fields: &[Field], options: &RenderOptions) -> Op
                 value: RowValue::Multi(lines),
             }]
         }
-    } else if let Some(summary) = network_summary(&info.network, 1) {
-        vec![Row {
-            key: "summary",
-            value: RowValue::Single(summary),
-        }]
     } else {
-        Vec::new()
+        let mut rows = Vec::new();
+        if let Some(ipv4) = compact_list(&info.network.ipv4_local_ips, 1) {
+            rows.push(Row {
+                key: "ipv4",
+                value: RowValue::Single(ipv4),
+            });
+        }
+        if let Some(ipv6) = compact_list(&info.network.ipv6_local_ips, 1) {
+            rows.push(Row {
+                key: "ipv6",
+                value: RowValue::Single(ipv6),
+            });
+        }
+        rows
     };
 
     filter_group("network", rows, fields, &[Field::Network])

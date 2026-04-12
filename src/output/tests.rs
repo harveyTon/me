@@ -135,8 +135,11 @@ fn block_truncates_groups_and_network_by_default() {
     );
     assert!(rendered.contains("  groups:"));
     assert!(rendered.contains("staff, admin, _developer (+2)"));
-    assert!(rendered.contains("  summary:"));
-    assert!(rendered.contains("ipv4 192.168.1.10 (+2), ipv6 fd12::1 (+1)"));
+    assert!(rendered.contains("  ipv4:"));
+    assert!(rendered.contains("192.168.1.10 (+2)"));
+    assert!(rendered.contains("  ipv6:"));
+    assert!(rendered.contains("fd12::1 (+1)"));
+    assert!(!rendered.contains("summary:"));
 }
 
 #[test]
@@ -262,6 +265,7 @@ fn block_full_expands_groups_and_network() {
             "network:\n  ipv4:\n    192.168.1.10\n    10.0.0.5\n    172.16.0.3\n  ipv6:\n    fd12::1\n    fd12::2"
         )
     );
+    assert!(!rendered.contains("summary:"));
 }
 
 #[test]
@@ -756,8 +760,30 @@ fn network_output_remains_unchanged_with_dense_context() {
     ];
     let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
     assert!(rendered.contains("network:\n"));
-    assert!(rendered.contains("summary:"));
-    assert!(rendered.contains("ipv4 192.168.1.10 (+2), ipv6 fd12::1 (+1)"));
+    assert!(rendered.contains("  ipv4:"));
+    assert!(rendered.contains("192.168.1.10 (+2)"));
+    assert!(rendered.contains("  ipv6:"));
+    assert!(rendered.contains("fd12::1 (+1)"));
+    assert!(!rendered.contains("summary:"));
+}
+
+#[test]
+fn block_network_omits_missing_address_family_cleanly() {
+    let mut info = sample_info();
+    info.network.ipv6_local_ips.clear();
+
+    let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
+    assert!(rendered.contains("network:\n  ipv4:"));
+    assert!(rendered.contains("192.168.1.10 (+2)"));
+    assert!(!rendered.contains("\n  ipv6:"));
+
+    info.network.ipv4_local_ips.clear();
+    info.network.ipv6_local_ips = vec!["fd12::1".into(), "fd12::2".into()];
+
+    let rendered = render_block(&info, &Field::defaults(), &RenderOptions::plain_for_tests());
+    assert!(rendered.contains("network:\n  ipv6:"));
+    assert!(rendered.contains("fd12::1 (+1)"));
+    assert!(!rendered.contains("\n  ipv4:"));
 }
 
 #[test]
