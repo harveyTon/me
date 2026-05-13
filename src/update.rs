@@ -551,7 +551,7 @@ mod tests {
     #[test]
     fn accepts_matching_sha256_manifest_entry() {
         let dir = tempdir().unwrap();
-        let archive = dir.path().join("me-v0.4.0-linux-x64.tar.gz");
+        let archive = dir.path().join("me-v0.4.1-linux-x64.tar.gz");
         fs::write(&archive, b"release-bytes").unwrap();
         let manifest = format!(
             "{}  {}\n",
@@ -565,9 +565,9 @@ mod tests {
     #[test]
     fn rejects_mismatched_sha256_manifest_entry() {
         let dir = tempdir().unwrap();
-        let archive = dir.path().join("me-v0.4.0-linux-x64.tar.gz");
+        let archive = dir.path().join("me-v0.4.1-linux-x64.tar.gz");
         fs::write(&archive, b"release-bytes").unwrap();
-        let error = verify_checksum_manifest(&archive, "deadbeef  me-v0.4.0-linux-x64.tar.gz\n")
+        let error = verify_checksum_manifest(&archive, "deadbeef  me-v0.4.1-linux-x64.tar.gz\n")
             .unwrap_err();
 
         assert!(error.to_string().contains("checksum verification failed"));

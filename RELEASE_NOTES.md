@@ -1,6 +1,6 @@
 # Release Notes
 
-## v0.4.0
+## v0.4.1
 
 Block-output presentation update for the current `me` CLI surface.
 
