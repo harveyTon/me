@@ -28,6 +28,8 @@ Standardized Homebrew distribution path:
 ## Automatic Updates
 
 The `me` release workflow updates this tap automatically after a GitHub Release is published.
+The generated formula prefers prebuilt release archives on supported macOS and Linux targets,
+and falls back to `cargo install` only when no matching binary path is available.
 
 Required secret in `harveyTon/me`:
 
@@ -53,14 +55,17 @@ cd homebrew-me
 mkdir -p Formula
 ```
 
-3. Generate the release tarball SHA after the release tag is pushed:
+3. Generate the source tarball SHA after the release tag is pushed:
 
 ```bash
 VERSION="vX.Y.Z"
 curl -L "https://github.com/harveyTon/me/archive/refs/tags/${VERSION}.tar.gz" | shasum -a 256
 ```
 
-4. Update the URL and SHA in `Formula/me.rb`.
+4. Update `Formula/me.rb` with:
+
+- the source tarball `url` and `sha256`
+- the matching release archive URLs and SHA256 values for macOS/Linux targets
 
 5. Tap, audit, and install locally:
 

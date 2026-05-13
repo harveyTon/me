@@ -125,13 +125,16 @@ Use a fine-grained token with contents write access to `harveyTon/homebrew-me`.
 
 If the tap update job fails, update the formula manually:
 
-- Generate the release tarball SHA:
+- Generate the source tarball SHA:
 
 ```bash
 curl -L "https://github.com/harveyTon/me/archive/refs/tags/${VERSION}.tar.gz" | shasum -a 256
 ```
 
-- Update `Formula/me.rb` in the Homebrew tap with the new URL and real SHA.
+- Generate the release archive SHA values from `SHA256SUMS.txt`, then update `Formula/me.rb`
+  in the Homebrew tap with:
+  - the source tarball URL and SHA
+  - the macOS/Linux prebuilt archive URLs and SHA values
 - Publish it to `harveyTon/homebrew-me`.
 - Follow `HOMEBREW.md` for the exact tap setup and install verification steps.
 

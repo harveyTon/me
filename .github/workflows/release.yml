@@ -154,17 +154,108 @@ jobs:
       - name: Update formula
         if: steps.tap-token.outputs.available == 'true'
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
           version="${GITHUB_REF_NAME}"
-          url="https://github.com/harveyTon/me/archive/refs/tags/${version}.tar.gz"
-          sha="$(curl -fsSL "${url}" | sha256sum | awk '{print $1}')"
+          source_url="https://github.com/harveyTon/me/archive/refs/tags/${version}.tar.gz"
+          source_sha="$(curl -fsSL "${source_url}" | sha256sum | awk '{print $1}')"
+          release_json="$(gh release view "${version}" --repo "${GITHUB_REPOSITORY}" --json assets)"
+
+          asset_sha() {
+            local asset_name="$1"
+            jq -r --arg name "${asset_name}" '
+              .assets[]
+              | select(.name == $name)
+              | .digest
+              | sub("^sha256:"; "")
+            ' <<<"${release_json}"
+          }
+
+          macos_arm64_asset="me-${version}-macos-arm64.tar.gz"
+          macos_x64_asset="me-${version}-macos-x64.tar.gz"
+          linux_arm64_asset="me-${version}-linux-arm64.tar.gz"
+          linux_x64_asset="me-${version}-linux-x64.tar.gz"
+
+          macos_arm64_sha="$(asset_sha "${macos_arm64_asset}")"
+          macos_x64_sha="$(asset_sha "${macos_x64_asset}")"
+          linux_arm64_sha="$(asset_sha "${linux_arm64_asset}")"
+          linux_x64_sha="$(asset_sha "${linux_x64_asset}")"
+
+          for value in \
+            "${macos_arm64_sha}" \
+            "${macos_x64_sha}" \
+            "${linux_arm64_sha}" \
+            "${linux_x64_sha}"; do
+            [[ -n "${value}" && "${value}" != "null" ]] || {
+              echo "missing prebuilt archive digest in GitHub release metadata" >&2
+              exit 1
+            }
+          done
 
           cd homebrew-me
 
-          perl -0pi -e "s|url \".*\"|url \"${url}\"|" Formula/me.rb
-          perl -0pi -e "s|sha256 \".*\"|sha256 \"${sha}\"|" Formula/me.rb
+          cat > Formula/me.rb <<EOF
+          class Me < Formula
+            desc "A modern, context-aware replacement for whoami"
+            homepage "https://github.com/harveyTon/me"
+            url "${source_url}"
+            sha256 "${source_sha}"
+            license "MIT"
+
+            if OS.mac?
+              if Hardware::CPU.arm?
+                resource "me-binary" do
+                  url "https://github.com/harveyTon/me/releases/download/${version}/${macos_arm64_asset}"
+                  sha256 "${macos_arm64_sha}"
+                end
+              elsif Hardware::CPU.intel?
+                resource "me-binary" do
+                  url "https://github.com/harveyTon/me/releases/download/${version}/${macos_x64_asset}"
+                  sha256 "${macos_x64_sha}"
+                end
+              else
+                depends_on "rust" => :build
+              end
+            elsif OS.linux?
+              if Hardware::CPU.arm?
+                resource "me-binary" do
+                  url "https://github.com/harveyTon/me/releases/download/${version}/${linux_arm64_asset}"
+                  sha256 "${linux_arm64_sha}"
+                end
+              elsif Hardware::CPU.intel?
+                resource "me-binary" do
+                  url "https://github.com/harveyTon/me/releases/download/${version}/${linux_x64_asset}"
+                  sha256 "${linux_x64_sha}"
+                end
+              else
+                depends_on "rust" => :build
+              end
+            else
+              depends_on "rust" => :build
+            end
+
+            def install
+              if prebuilt_binary_available?
+                resource("me-binary").stage do
+                  bin.install "me"
+                end
+              else
+                system "cargo", "install", *std_cargo_args
+              end
+
+              man1.install "man/man1/me.1"
+            end
+
+            private
+
+            def prebuilt_binary_available?
+              (OS.mac? || OS.linux?) && (Hardware::CPU.arm? || Hardware::CPU.intel?)
+            end
+          end
+          EOF
 
           ruby -c Formula/me.rb
 
